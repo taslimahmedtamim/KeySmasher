@@ -35,17 +35,17 @@ interface FingerModel {
 
 const LEFT_FINGERS: FingerModel[] = [
   { id: 'left-pinky', name: 'Pinky', shortName: 'P', homeKey: 'A', hand: 'left', height: 'h-12 sm:h-14', color: 'rose', hex: '#f43f5e' },
-  { id: 'left-ring', name: 'Ring', shortName: 'R', homeKey: 'S', hand: 'left', height: 'h-16 sm:h-20', color: 'amber', hex: '#f59e0b' },
-  { id: 'left-middle', name: 'Middle', shortName: 'M', homeKey: 'D', hand: 'left', height: 'h-18 sm:h-22', color: 'emerald', hex: '#10b981' },
-  { id: 'left-index', name: 'Index', shortName: 'I', homeKey: 'F', hand: 'left', height: 'h-16 sm:h-18', color: 'cyan', hex: '#22d3ee', isTactile: true },
+  { id: 'left-ring', name: 'Ring', shortName: 'R', homeKey: 'S', hand: 'left', height: 'h-20 sm:h-24', color: 'amber', hex: '#f59e0b' },
+  { id: 'left-middle', name: 'Middle', shortName: 'M', homeKey: 'D', hand: 'left', height: 'h-24 sm:h-28', color: 'emerald', hex: '#10b981' },
+  { id: 'left-index', name: 'Index', shortName: 'I', homeKey: 'F', hand: 'left', height: 'h-16 sm:h-20', color: 'cyan', hex: '#22d3ee', isTactile: true },
   { id: 'thumb', name: 'Thumb', shortName: 'T', homeKey: '␣', hand: 'left', height: 'h-10 sm:h-12', color: 'blue', hex: '#3b82f6' },
 ];
 
 const RIGHT_FINGERS: FingerModel[] = [
   { id: 'thumb', name: 'Thumb', shortName: 'T', homeKey: '␣', hand: 'right', height: 'h-10 sm:h-12', color: 'blue', hex: '#3b82f6' },
-  { id: 'right-index', name: 'Index', shortName: 'I', homeKey: 'J', hand: 'right', height: 'h-16 sm:h-18', color: 'cyan', hex: '#22d3ee', isTactile: true },
-  { id: 'right-middle', name: 'Middle', shortName: 'M', homeKey: 'K', hand: 'right', height: 'h-18 sm:h-22', color: 'emerald', hex: '#10b981' },
-  { id: 'right-ring', name: 'Ring', shortName: 'R', homeKey: 'L', hand: 'right', height: 'h-16 sm:h-20', color: 'amber', hex: '#f59e0b' },
+  { id: 'right-index', name: 'Index', shortName: 'I', homeKey: 'J', hand: 'right', height: 'h-16 sm:h-20', color: 'cyan', hex: '#22d3ee', isTactile: true },
+  { id: 'right-middle', name: 'Middle', shortName: 'M', homeKey: 'K', hand: 'right', height: 'h-24 sm:h-28', color: 'emerald', hex: '#10b981' },
+  { id: 'right-ring', name: 'Ring', shortName: 'R', homeKey: 'L', hand: 'right', height: 'h-20 sm:h-24', color: 'amber', hex: '#f59e0b' },
   { id: 'right-pinky', name: 'Pinky', shortName: 'P', homeKey: ';', hand: 'right', height: 'h-12 sm:h-14', color: 'rose', hex: '#f43f5e' },
 ];
 
