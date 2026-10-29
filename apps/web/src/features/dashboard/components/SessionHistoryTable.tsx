@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { History, ChevronLeft, ChevronRight } from 'lucide-react';
+import { History, ChevronLeft, ChevronRight, Star, Trophy } from 'lucide-react';
 import { SavedTestSession } from '../../typing/utils/historyStorage';
 
 interface SessionHistoryTableProps {
@@ -13,6 +13,32 @@ const ITEMS_PER_PAGE = 8;
 export const SessionHistoryTable: React.FC<SessionHistoryTableProps> = ({ sessions }) => {
   const [filterMode, setFilterMode] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Identify all-time peak WPM session
+  const peakWpm = useMemo(() => {
+    if (sessions.length === 0) return 0;
+    return Math.max(...sessions.map((s) => s.netWpm));
+  }, [sessions]);
+
+  // Identify best session ID for each preset mode
+  const presetBestIds = useMemo(() => {
+    const scoreMap = new Map<string, { id: string; wpm: number }>();
+    sessions.forEach((s) => {
+      const presetKey =
+        s.mode === 'time'
+          ? `time-${s.targetDuration || s.elapsedSeconds}`
+          : s.mode === 'words'
+          ? `words-${s.targetWords || 25}`
+          : s.mode;
+
+      const existing = scoreMap.get(presetKey);
+      if (!existing || s.netWpm > existing.wpm) {
+        scoreMap.set(presetKey, { id: s.id, wpm: s.netWpm });
+      }
+    });
+
+    return new Set(Array.from(scoreMap.values()).map((v) => v.id));
+  }, [sessions]);
 
   // Filter sessions
   const filteredSessions = useMemo(() => {
@@ -58,7 +84,7 @@ export const SessionHistoryTable: React.FC<SessionHistoryTableProps> = ({ sessio
           </p>
         </div>
 
-        {/* Filter and Export Toolbar */}
+        {/* Filter Toolbar */}
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
           {/* Mode Tabs */}
           <div className="flex items-center gap-1 rounded-xl border border-surface-border bg-surface-muted p-1 text-[11px] font-semibold">
@@ -104,52 +130,91 @@ export const SessionHistoryTable: React.FC<SessionHistoryTableProps> = ({ sessio
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-border/30">
-              {paginatedSessions.map((session) => (
-                <tr
-                  key={session.id}
-                  className="hover:bg-surface-muted/30 transition-colors group"
-                >
-                  <td className="py-3 text-slate-400 text-[11px] whitespace-nowrap">
-                    {formatDate(session.timestamp)}
-                  </td>
-                  <td className="py-3 whitespace-nowrap">
-                    <span
-                      className={`inline-flex rounded-lg px-2.5 py-0.5 text-[10px] font-bold ${
-                        session.mode === 'time'
-                          ? 'border border-cyan-500/30 bg-cyan-500/10 text-cyan-300'
+              {paginatedSessions.map((session) => {
+                const isPeak = session.netWpm === peakWpm && peakWpm > 0;
+                const isBest = presetBestIds.has(session.id);
+                const roundedNetWpm = Math.round(session.netWpm);
+                const roundedRawWpm = Math.round(session.rawWpm);
+                const roundedAccuracy = Math.round(session.accuracy);
+                const roundedConsistency = Math.round(session.consistency || 100);
+
+                return (
+                  <tr
+                    key={session.id}
+                    className={`transition-colors group ${
+                      isPeak
+                        ? 'bg-amber-500/[0.08] hover:bg-amber-500/[0.13]'
+                        : isBest
+                        ? 'bg-cyan-500/[0.04] hover:bg-cyan-500/[0.08]'
+                        : 'hover:bg-surface-muted/30'
+                    }`}
+                  >
+                    <td className="py-3 text-slate-400 text-[11px] whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        {isPeak ? (
+                          <span
+                            title="All-Time Peak Speed Record"
+                            className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/20 px-2 py-0.5 text-[10px] font-black text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.3)] animate-pulse"
+                          >
+                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                            <span>PEAK</span>
+                          </span>
+                        ) : isBest ? (
+                          <span
+                            title="Personal Best for this mode preset"
+                            className="inline-flex items-center gap-1 rounded-full border border-cyan-500/40 bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.25)]"
+                          >
+                            <Star className="h-2.5 w-2.5 fill-cyan-400 text-cyan-400" />
+                            <span>BEST</span>
+                          </span>
+                        ) : null}
+                        <span>{formatDate(session.timestamp)}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 whitespace-nowrap">
+                      <span
+                        className={`inline-flex rounded-lg px-2.5 py-0.5 text-[10px] font-bold ${
+                          session.mode === 'time'
+                            ? 'border border-cyan-500/30 bg-cyan-500/10 text-cyan-300'
+                            : session.mode === 'words'
+                            ? 'border border-purple-500/30 bg-purple-500/10 text-purple-300'
+                            : session.mode === 'quote'
+                            ? 'border border-amber-500/30 bg-amber-500/10 text-amber-300'
+                            : 'border border-slate-700 bg-surface-muted text-slate-300'
+                        }`}
+                      >
+                        {session.mode === 'time'
+                          ? `Time ${session.targetDuration || session.elapsedSeconds}s`
                           : session.mode === 'words'
-                          ? 'border border-purple-500/30 bg-purple-500/10 text-purple-300'
+                          ? `${session.targetWords || 25} Words`
                           : session.mode === 'quote'
-                          ? 'border border-amber-500/30 bg-amber-500/10 text-amber-300'
-                          : 'border border-slate-700 bg-surface-muted text-slate-300'
+                          ? 'Quote Mode'
+                          : 'Custom'}
+                      </span>
+                    </td>
+                    <td
+                      className={`py-3 font-bold whitespace-nowrap ${
+                        isPeak ? 'text-amber-300' : 'text-cyan-300'
                       }`}
                     >
-                      {session.mode === 'time'
-                        ? `Time ${session.targetDuration || session.elapsedSeconds}s`
-                        : session.mode === 'words'
-                        ? `${session.targetWords || 25} Words`
-                        : session.mode === 'quote'
-                        ? 'Quote Mode'
-                        : 'Custom'}
-                    </span>
-                  </td>
-                  <td className="py-3 font-bold text-cyan-300 whitespace-nowrap">
-                    {session.netWpm} <span className="text-[10px] text-slate-500 font-normal">WPM</span>
-                  </td>
-                  <td className="py-3 text-slate-400 whitespace-nowrap">
-                    {session.rawWpm} <span className="text-[10px] text-slate-500">WPM</span>
-                  </td>
-                  <td className="py-3 font-bold text-emerald-400 whitespace-nowrap">
-                    {session.accuracy}%
-                  </td>
-                  <td className="py-3 text-purple-300 whitespace-nowrap">
-                    {session.consistency || 90}%
-                  </td>
-                  <td className="py-3 text-slate-400 whitespace-nowrap">
-                    {session.errorCount || 0}
-                  </td>
-                </tr>
-              ))}
+                      <span className="text-sm font-black">{roundedNetWpm}</span>{' '}
+                      <span className="text-[10px] text-slate-500 font-normal">WPM</span>
+                    </td>
+                    <td className="py-3 text-slate-400 whitespace-nowrap">
+                      {roundedRawWpm} <span className="text-[10px] text-slate-500">WPM</span>
+                    </td>
+                    <td className="py-3 font-bold text-emerald-400 whitespace-nowrap">
+                      {roundedAccuracy}%
+                    </td>
+                    <td className="py-3 text-purple-300 whitespace-nowrap">
+                      {roundedConsistency}%
+                    </td>
+                    <td className="py-3 text-slate-400 whitespace-nowrap">
+                      {session.errorCount || 0}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : (

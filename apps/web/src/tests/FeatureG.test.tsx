@@ -195,12 +195,12 @@ describe('Feature G: User Dashboard & Analytics', () => {
       // 3. Progression Chart
       expect(screen.getByText('Speed & Precision Progression')).toBeInTheDocument();
 
-      // 4. Personal Bests & Academy
-      expect(screen.getByText('Personal Bests Hall of Records')).toBeInTheDocument();
+      // 4. Academy Mastery
       expect(screen.getByText('Touch Typing Academy Mastery')).toBeInTheDocument();
 
-      // 5. Historical Table
+      // 5. Historical Table with Star Highlights
       expect(screen.getByText('Verified Speed Test Records')).toBeInTheDocument();
+      expect(screen.getByText('PEAK')).toBeInTheDocument();
       expect(screen.getByText('Net Speed')).toBeInTheDocument();
       expect(screen.getByText('Raw Speed')).toBeInTheDocument();
 

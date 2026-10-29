@@ -21,7 +21,6 @@ import { useUserAnalytics } from '@/features/dashboard/useUserAnalytics';
 import { DashboardProfileBanner } from '@/features/dashboard/components/DashboardProfileBanner';
 import { KpiMetricsGrid } from '@/features/dashboard/components/KpiMetricsGrid';
 import { ProgressionChart } from '@/features/dashboard/components/ProgressionChart';
-import { PersonalBestsGrid } from '@/features/dashboard/components/PersonalBestsGrid';
 import { AcademyMasteryCard } from '@/features/dashboard/components/AcademyMasteryCard';
 import { SessionHistoryTable } from '@/features/dashboard/components/SessionHistoryTable';
 
@@ -151,13 +150,10 @@ export default function DashboardPage() {
         {/* 3. Speed & Precision Progression Curve */}
         <ProgressionChart points={progression} />
 
-        {/* 4. Personal Bests Records Matrix & Academy Mastery Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <PersonalBestsGrid records={personalBests} />
-          <AcademyMasteryCard academy={academy} />
-        </div>
+        {/* 4. Touch Typing Academy Mastery */}
+        <AcademyMasteryCard academy={academy} />
 
-        {/* 5. Detailed Session History Audit Table */}
+        {/* 5. Detailed Session History Audit Table with Star Highlights */}
         <SessionHistoryTable sessions={sessions} />
       </div>
     </div>
