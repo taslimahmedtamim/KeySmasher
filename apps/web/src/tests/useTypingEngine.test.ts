@@ -241,4 +241,60 @@ describe('useTypingEngine', () => {
     expect(result.current.currentWordIndex).toBe(0);
     expect(result.current.metrics.rawWpm).toBe(0);
   });
+
+  it('immediately completes and locks timer when final character of sentence is typed in custom or quote mode, preventing WPM decay', () => {
+    const { result } = renderHook(() =>
+      useTypingEngine({
+        initialConfig: {
+          mode: 'custom',
+          initialPassage: 'flawless accuracy',
+        },
+      })
+    );
+
+    // Type 'flawless'
+    'flawless'.split('').forEach((char) => {
+      act(() => {
+        result.current.actions.handleKeyDown({
+          key: char,
+          preventDefault: vi.fn(),
+        } as unknown as React.KeyboardEvent<HTMLInputElement>);
+      });
+    });
+
+    // Space to advance
+    act(() => {
+      result.current.actions.handleKeyDown({
+        key: ' ',
+        preventDefault: vi.fn(),
+      } as unknown as React.KeyboardEvent<HTMLInputElement>);
+    });
+
+    expect(result.current.currentWordIndex).toBe(1);
+
+    // Type 'accuracy'
+    'accuracy'.split('').forEach((char) => {
+      act(() => {
+        result.current.actions.handleKeyDown({
+          key: char,
+          preventDefault: vi.fn(),
+        } as unknown as React.KeyboardEvent<HTMLInputElement>);
+      });
+    });
+
+    // Should immediately complete upon typing 'y'
+    expect(result.current.status).toBe('completed');
+    expect(result.current.metrics.completedWordsCount).toBe(2);
+
+    const completedWpm = result.current.metrics.netWpm;
+
+    // Fast-forward time by 10 seconds: WPM should NOT reduce because timer was cleared
+    act(() => {
+      vi.advanceTimersByTime(10000);
+    });
+
+    expect(result.current.status).toBe('completed');
+    expect(result.current.metrics.netWpm).toBe(completedWpm);
+  });
 });
+

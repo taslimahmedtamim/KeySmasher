@@ -145,8 +145,8 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         missed += expWord.length - actWord.length;
       }
 
-      // Add space for past words
-      if (isPastWord) {
+      // Add space for past words between words (not after the final word)
+      if (isPastWord && w < expectedWords.length - 1) {
         totalTyped++; // the space key
         correct++; // word was submitted with space
       }
@@ -188,6 +188,12 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    if (startTimeRef.current) {
+      const finalElapsed = Math.max(0.1, (Date.now() - startTimeRef.current) / 1000);
+      setElapsedSeconds(finalElapsed);
+      startTimeRef.current = null;
+    }
+    statusRef.current = 'completed';
     setStatus('completed');
     if (props.onTestComplete) {
       props.onTestComplete(metrics, wpmHistory);
@@ -359,6 +365,24 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         return;
       }
 
+      // Handle Enter
+      if (e.key === 'Enter') {
+        const isFinalWord =
+          currentWordIndex >= expectedWords.length - 1 ||
+          (config.mode === 'words' && currentWordIndex >= config.targetWordCount - 1);
+
+        if (isFinalWord && currentInput.length > 0) {
+          e.preventDefault();
+          const nextWords = [...typedWords];
+          nextWords[currentWordIndex] = currentInput;
+          setTypedWords(nextWords);
+          setCurrentWordIndex(currentWordIndex + 1);
+          setCurrentInput('');
+          completeTest();
+          return;
+        }
+      }
+
       // Ordinary single character input
       if (e.key.length === 1) {
         e.preventDefault();
@@ -372,16 +396,20 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
           const updatedInput = currentInput + e.key;
           setCurrentInput(updatedInput);
 
-          // If last word in words mode and matches fully, check immediate completion
-          if (
-            config.mode === 'words' &&
-            currentWordIndex === expectedWords.length - 1 &&
-            updatedInput === expectedWord
-          ) {
+          // Check if on final word of passage (or reached words target)
+          const isFinalWord =
+            currentWordIndex >= expectedWords.length - 1 ||
+            (config.mode === 'words' && currentWordIndex >= config.targetWordCount - 1);
+
+          // If on final word and matches expected word, complete test immediately
+          if (isFinalWord && updatedInput === expectedWord) {
             const nextWords = [...typedWords];
             nextWords[currentWordIndex] = updatedInput;
             setTypedWords(nextWords);
+            setCurrentWordIndex(currentWordIndex + 1);
+            setCurrentInput('');
             completeTest();
+            return;
           }
         }
       }
