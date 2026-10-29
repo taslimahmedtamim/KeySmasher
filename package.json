@@ -1,0 +1,29 @@
+{
+  "name": "keysmasher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Full-Stack Touch Typing Learning, Practicing & Competition Platform",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/web",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "keywords": [
+    "typing",
+    "touch-typing",
+    "monkeytype",
+    "speed-test",
+    "multiplayer",
+    "nextjs",
+    "react",
+    "typescript"
+  ],
+  "author": "KeySmasher Team",
+  "license": "MIT"
+}

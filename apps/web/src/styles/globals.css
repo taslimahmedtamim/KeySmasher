@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+  }
+
+  body {
+    @apply bg-background text-slate-100 antialiased min-h-screen selection:bg-cyan-500/30 selection:text-cyan-200;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Accessible focus indicators for keyboard navigation */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-cyan-400 ring-offset-2 ring-offset-background;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0d131f;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f2a3f;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2d3b55;
+}
+
+/* Subtle glow animations */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 4s ease-in-out infinite;
+}
