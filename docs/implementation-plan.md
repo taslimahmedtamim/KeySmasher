@@ -31,9 +31,9 @@
 - [x] Integrate Certificate download in both Dashboard (All-time personal best) and Practice Page (immediate post-test results).
 - [x] Implement `KpiMetricsGrid.tsx` with 5 neon headline cards: Peak WPM, Lifetime Average, Accuracy Ratio, Rhythm Consistency, and Active Daily Streak with clean integer rounding.
 - [x] Implement `ProgressionChart.tsx` featuring an interactive SVG curve with neon cyan glow, filter tabs (All, Time, Words, Quotes), and hover data popovers.
-- [x] Implement `PersonalBestsGrid.tsx` categorizing verified speed records across 15s, 30s, 60s, 120s time modes and 10, 25, 50, 100 word presets.
+- [x] Streamline dashboard by removing redundant 9-box personal bests grid and integrating prominent Star ⭐ / Peak badges directly into the Verified Speed Test Records table.
 - [x] Implement `AcademyMasteryCard.tsx` showcasing 5-level curriculum completion bars, star counts, and direct lesson navigation.
-- [x] Implement `SessionHistoryTable.tsx` with date formatting, mode badges, and clean pagination.
+- [x] Implement `SessionHistoryTable.tsx` with date formatting, mode badges, clean pagination, and glowing Star highlights for all-time peak and preset records.
 - [x] Build authenticated and guest states in `apps/web/src/app/dashboard/page.tsx` with Cyberpunk unlock gateway and 1-click Demo login.
 - [x] Write comprehensive unit tests in `apps/web/src/tests/FeatureG.test.tsx` (59 total passing tests across monorepo).
 - [x] Verify strict TypeScript typecheck and ESLint with 0 errors and 0 warnings.
