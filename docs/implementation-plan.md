@@ -4,8 +4,8 @@
 
 | Phase | Feature Description | Status | Verification Summary |
 | :--- | :--- | :--- | :--- |
-| **FEATURE A** | **Foundation and project setup** | **Tested** | Monorepo created, strict TS configured, shared scoring engine built & tested, Next.js 15+ App Router layout and navigation routes implemented, health check API passing. Awaiting user approval. |
-| **FEATURE B** | **Typing engine** (Headless, calculations, timer, caret, events) | **Not started** | Dependencies: Feature A. |
+| **FEATURE A** | **Foundation and project setup** | **Approved** | Monorepo created, strict TS configured, shared scoring engine built & tested, Next.js 15+ App Router layout and navigation routes implemented, health check API passing. Approved by user. |
+| **FEATURE B** | **Typing engine** (Headless, calculations, timer, caret, events) | **In progress** | Dependencies: Feature A. Implementing headless engine, passage generator, and timer lifecycle. |
 | **FEATURE C** | **Practice page** (Interactive typing UI, modes, difficulty, results) | **Not started** | Dependencies: Feature B. |
 | **FEATURE D** | **Learning academy** (5 Course levels, progressive unlocking, lessons) | **Not started** | Dependencies: Feature B, C. |
 | **FEATURE E** | **Keyboard layouts & finger guidance** (Visual keyboard, QWERTY map) | **Not started** | Dependencies: Feature D. |

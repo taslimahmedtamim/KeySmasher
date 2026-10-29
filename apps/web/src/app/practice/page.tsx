@@ -8,30 +8,66 @@ import {
   RotateCcw,
   Sparkles,
   Zap,
-  Sliders,
-  Keyboard,
+  CheckCircle2,
+  AlertTriangle,
+  Flame,
+  ArrowRight,
+  RefreshCw,
   Info,
 } from 'lucide-react';
-import { TestMode, TimeDurationOption, WordCountOption, PassageDifficulty } from '@keysmasher/shared';
+import {
+  PassageDifficulty,
+  TestMode,
+  TimeDurationOption,
+  WordCountOption,
+} from '@keysmasher/shared';
+import { useTypingEngine } from '@/features/typing/useTypingEngine';
+import { TypingArea } from '@/features/typing/components/TypingArea';
 
 export default function PracticePage() {
-  const [mode, setMode] = useState<TestMode>('time');
-  const [duration, setDuration] = useState<TimeDurationOption>(30);
-  const [wordCount, setWordCount] = useState<WordCountOption>(25);
-  const [difficulty, setDifficulty] = useState<PassageDifficulty>('intermediate');
+  const {
+    status,
+    config,
+    renderedWords,
+    currentWordIndex,
+    activeCharIndex,
+    metrics,
+    wpmHistory,
+    inputRef,
+    actions: { restart, handleKeyDown, handleInputChange, handlePaste, setConfig },
+  } = useTypingEngine();
+
+  const handleModeChange = (newMode: TestMode) => {
+    setConfig((prev) => ({ ...prev, mode: newMode }));
+  };
+
+  const handleDurationChange = (d: TimeDurationOption) => {
+    setConfig((prev) => ({ ...prev, durationSeconds: d }));
+  };
+
+  const handleWordCountChange = (w: WordCountOption) => {
+    setConfig((prev) => ({ ...prev, targetWordCount: w }));
+  };
+
+  const handleDifficultyChange = (diff: PassageDifficulty) => {
+    setConfig((prev) => ({ ...prev, difficulty: diff }));
+  };
+
+  const isCompleted = status === 'completed';
 
   return (
     <div className="py-8 md:py-12">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         {/* Controls Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-surface-border bg-surface/80 p-3.5 backdrop-blur">
-          {/* Mode selector */}
+          {/* Mode Selector (Time vs Words) */}
           <div className="flex items-center gap-1 rounded-xl bg-surface-muted p-1">
             <button
               type="button"
-              onClick={() => setMode('time')}
+              id="practice-mode-time"
+              onClick={() => handleModeChange('time')}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                mode === 'time'
+                config.mode === 'time'
                   ? 'bg-cyan-500 text-slate-950 shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
@@ -41,9 +77,10 @@ export default function PracticePage() {
             </button>
             <button
               type="button"
-              onClick={() => setMode('words')}
+              id="practice-mode-words"
+              onClick={() => handleModeChange('words')}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                mode === 'words'
+                config.mode === 'words'
                   ? 'bg-cyan-500 text-slate-950 shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
@@ -53,17 +90,17 @@ export default function PracticePage() {
             </button>
           </div>
 
-          {/* Config options (Duration or Word Count) */}
+          {/* Config Option: Durations or Word counts */}
           <div className="flex items-center gap-1.5">
-            {mode === 'time' ? (
+            {config.mode === 'time' ? (
               <>
                 {([15, 30, 60, 120] as TimeDurationOption[]).map((d) => (
                   <button
                     key={d}
                     type="button"
-                    onClick={() => setDuration(d)}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${
-                      duration === d
+                    onClick={() => handleDurationChange(d)}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                      config.durationSeconds === d
                         ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
                         : 'text-slate-400 hover:text-white'
                     }`}
@@ -78,9 +115,9 @@ export default function PracticePage() {
                   <button
                     key={w}
                     type="button"
-                    onClick={() => setWordCount(w)}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${
-                      wordCount === w
+                    onClick={() => handleWordCountChange(w)}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                      config.targetWordCount === w
                         ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
                         : 'text-slate-400 hover:text-white'
                     }`}
@@ -94,13 +131,13 @@ export default function PracticePage() {
 
           {/* Difficulty selector */}
           <div className="flex items-center gap-1.5">
-            {(['beginner', 'intermediate', 'advanced'] as PassageDifficulty[]).map((diff) => (
+            {(['beginner', 'intermediate', 'advanced', 'expert'] as PassageDifficulty[]).map((diff) => (
               <button
                 key={diff}
                 type="button"
-                onClick={() => setDifficulty(diff)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
-                  difficulty === diff
+                onClick={() => handleDifficultyChange(diff)}
+                className={`rounded-lg px-2.5 py-1 text-xs font-medium capitalize transition-all ${
+                  config.difficulty === diff
                     ? 'border border-purple-500/40 bg-purple-500/10 text-purple-300'
                     : 'text-slate-400 hover:text-white'
                 }`}
@@ -116,71 +153,162 @@ export default function PracticePage() {
           <div className="flex items-center gap-8">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                WPM
+                Raw WPM
               </div>
-              <div className="text-3xl font-black text-cyan-400">0</div>
+              <div className="text-3xl font-black text-cyan-400">
+                {metrics.rawWpm}
+              </div>
             </div>
+
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Net WPM
+              </div>
+              <div className="text-3xl font-black text-white">
+                {metrics.netWpm}
+              </div>
+            </div>
+
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Accuracy
               </div>
-              <div className="text-3xl font-black text-emerald-400">100%</div>
+              <div className="text-3xl font-black text-emerald-400">
+                {metrics.accuracy}%
+              </div>
             </div>
+
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Time Remaining
+                {config.mode === 'time' ? 'Time Remaining' : 'Progress'}
               </div>
-              <div className="text-3xl font-black text-white">
-                {mode === 'time' ? `${duration}s` : '—'}
+              <div className="text-3xl font-black text-slate-200">
+                {config.mode === 'time'
+                  ? `${metrics.timeRemaining}s`
+                  : `${metrics.completedWordsCount} / ${config.targetWordCount}`}
               </div>
             </div>
           </div>
 
-          <button
-            type="button"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-surface px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-slate-500 hover:text-white"
-            title="Reset test"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            <span>Reset</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              id="practice-restart-btn"
+              onClick={() => restart(false)}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-surface px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-slate-500 hover:text-white active:scale-95"
+              title="Restart current passage (Tab + Enter or Escape)"
+            >
+              <RotateCcw className="h-3.5 w-3.5 text-cyan-400" />
+              <span>Retry</span>
+            </button>
+
+            <button
+              type="button"
+              id="practice-new-passage-btn"
+              onClick={() => restart(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-surface px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-slate-500 hover:text-white active:scale-95"
+              title="Generate new passage"
+            >
+              <RefreshCw className="h-3.5 w-3.5 text-purple-400" />
+              <span>New Passage</span>
+            </button>
+          </div>
         </div>
 
         {/* Centerpiece Typing Area */}
         <div className="relative mt-8 min-h-[220px] rounded-2xl border border-surface-border bg-surface/50 p-8 shadow-neon-card">
-          {/* Subtle placeholder indicator */}
-          <div className="flex flex-col items-center justify-center text-center py-6">
-            <div className="mb-3 inline-flex rounded-full bg-cyan-500/10 p-3 text-cyan-400">
-              <Keyboard className="h-8 w-8" />
-            </div>
-            <h2 className="text-xl font-bold text-white">Typing Engine (Feature B)</h2>
-            <p className="mt-2 max-w-lg text-sm text-slate-300">
-              The high-performance typing engine with real-time keystroke tracking, caret rendering,
-              backspace handling, and live WPM calculation is planned for implementation in{' '}
-              <strong className="text-cyan-400">Feature B</strong> following Phase A approval.
-            </p>
+          {isCompleted ? (
+            /* Results Screen */
+            <div className="py-6 text-center animate-fade-in">
+              <div className="mb-4 inline-flex rounded-full bg-emerald-500/10 p-3 text-emerald-400 border border-emerald-500/20">
+                <CheckCircle2 className="h-8 w-8" />
+              </div>
 
-            <div className="mt-6 flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-surface-muted px-4 py-2 text-xs text-slate-300 font-mono">
-              <span className="text-cyan-400 font-bold">Selected Mode:</span>
-              <span>{mode.toUpperCase()}</span>
-              <span>•</span>
-              <span className="text-cyan-400 font-bold">Config:</span>
-              <span>{mode === 'time' ? `${duration} seconds` : `${wordCount} words`}</span>
-              <span>•</span>
-              <span className="text-cyan-400 font-bold">Difficulty:</span>
-              <span className="capitalize">{difficulty}</span>
+              <h2 className="text-2xl font-black text-white sm:text-3xl">
+                Test Completed!
+              </h2>
+
+              <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4 max-w-2xl mx-auto">
+                <div className="rounded-xl border border-surface-border bg-surface p-4">
+                  <div className="text-xs uppercase font-bold text-slate-400">Net Speed</div>
+                  <div className="mt-1 text-3xl font-black text-cyan-400">{metrics.netWpm}</div>
+                  <div className="text-[10px] text-slate-500">WPM</div>
+                </div>
+
+                <div className="rounded-xl border border-surface-border bg-surface p-4">
+                  <div className="text-xs uppercase font-bold text-slate-400">Raw Speed</div>
+                  <div className="mt-1 text-3xl font-black text-white">{metrics.rawWpm}</div>
+                  <div className="text-[10px] text-slate-500">WPM</div>
+                </div>
+
+                <div className="rounded-xl border border-surface-border bg-surface p-4">
+                  <div className="text-xs uppercase font-bold text-slate-400">Accuracy</div>
+                  <div className="mt-1 text-3xl font-black text-emerald-400">{metrics.accuracy}%</div>
+                  <div className="text-[10px] text-slate-500">Correct Ratio</div>
+                </div>
+
+                <div className="rounded-xl border border-surface-border bg-surface p-4">
+                  <div className="text-xs uppercase font-bold text-slate-400">Characters</div>
+                  <div className="mt-1 text-lg font-bold text-slate-200">
+                    <span className="text-emerald-400">{metrics.correctCharacters}</span>
+                    <span className="text-slate-500"> / </span>
+                    <span className="text-rose-400">{metrics.incorrectCharacters}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500">Correct / Errors</div>
+                </div>
+              </div>
+
+              <div className="mt-8 flex items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => restart(false)}
+                  className="flex items-center gap-2 rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-400 transition-all shadow-neon-cyan active:scale-95"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span>Retry Same Text</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => restart(true)}
+                  className="flex items-center gap-2 rounded-xl border border-surface-border bg-surface-muted px-5 py-2.5 text-sm font-semibold text-slate-200 hover:text-white transition-all active:scale-95"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <span>New Passage</span>
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Live Typing Area */
+            <div>
+              <TypingArea
+                renderedWords={renderedWords}
+                currentWordIndex={currentWordIndex}
+                activeCharIndex={activeCharIndex}
+                status={status}
+                inputRef={inputRef}
+                onKeyDown={handleKeyDown}
+                onInputChange={handleInputChange}
+                onPaste={handlePaste}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Hotkey tip */}
-        <div className="mt-4 flex items-center justify-between text-xs text-slate-400 px-2">
+        {/* Hotkey tip & Guest Notice */}
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 px-2">
           <div className="flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5 text-slate-400" />
-            <span>Physical keyboard recommended for touch-typing speed development.</span>
+            <span>Click inside the box or start typing immediately. Space advances to next word.</span>
           </div>
           <div>
-            <span className="rounded bg-surface-muted border border-surface-border px-1.5 py-0.5 font-mono text-[10px]">Tab</span> + <span className="rounded bg-surface-muted border border-surface-border px-1.5 py-0.5 font-mono text-[10px]">Enter</span> to restart
+            <span className="rounded bg-surface-muted border border-surface-border px-1.5 py-0.5 font-mono text-[10px]">
+              Tab
+            </span>{' '}
+            or{' '}
+            <span className="rounded bg-surface-muted border border-surface-border px-1.5 py-0.5 font-mono text-[10px]">
+              Esc
+            </span>{' '}
+            to restart
           </div>
         </div>
       </div>
