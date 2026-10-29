@@ -147,7 +147,7 @@ export const HeroTypingPreview: React.FC = () => {
           let charClass = 'text-slate-500';
 
           if (isCorrect) {
-            charClass = 'text-cyan-300 font-semibold';
+            charClass = 'text-cyan-300';
           } else if (isError) {
             charClass = isSpace
               ? 'bg-rose-500/40 text-rose-300 rounded-sm underline decoration-rose-500'
