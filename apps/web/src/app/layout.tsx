@@ -3,6 +3,8 @@ import '../styles/globals.css';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 
+import { AppProviders } from '@/components/providers/AppProviders';
+
 export const metadata: Metadata = {
   title: 'KeySmasher — Touch Typing Academy, Practice & Competitions',
   description:
@@ -35,9 +37,11 @@ export default function RootLayout({
         <link rel="icon" href="/logo.png" />
       </head>
       <body className="flex min-h-screen flex-col bg-background font-sans text-slate-100">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <AppProviders>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </AppProviders>
       </body>
     </html>
   );

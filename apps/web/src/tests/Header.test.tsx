@@ -1,7 +1,9 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Header } from '@/components/layout/Header';
+import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
+import { AuthModal } from '@/features/auth/components/AuthModal';
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -14,9 +16,27 @@ vi.mock('next/image', () => ({
   default: ({ priority, ...props }: React.ImgHTMLAttributes<HTMLImageElement> & { priority?: boolean }) => <img {...props} />,
 }));
 
+const TestShell: React.FC = () => {
+  return (
+    <AuthProvider>
+      <Header />
+      <AuthModal />
+    </AuthProvider>
+  );
+};
+
 describe('Header Component', () => {
+  beforeEach(() => {
+    // Clear mock storage
+    try {
+      window.localStorage.clear();
+    } catch {
+      // Ignore
+    }
+  });
+
   it('renders KeySmasher brand logo and primary public navigation links (without Dashboard)', () => {
-    render(<Header />);
+    render(<TestShell />);
 
     // Brand name
     expect(screen.getByText(/KEY/i)).toBeInTheDocument();
@@ -34,14 +54,34 @@ describe('Header Component', () => {
     expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument();
   });
 
-  it('reveals Dashboard and user profile when signed in', () => {
-    render(<Header />);
+  it('opens AuthModal and reveals Dashboard and user profile when signed in via Demo account', async () => {
+    render(<TestShell />);
 
     const signInBtn = screen.getByRole('button', { name: /Sign In/i });
     fireEvent.click(signInBtn);
 
+    // AuthModal is now opened
+    expect(screen.getByText(/KeySmasher Account/i)).toBeInTheDocument();
+    const demoLoginBtn = screen.getByRole('button', { name: /Quick Demo Account/i });
+
+    await act(async () => {
+      fireEvent.click(demoLoginBtn);
+    });
+
     // Dashboard is now accessible
     expect(screen.getByRole('link', { name: /Dashboard/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /My Profile/i })).toBeInTheDocument();
+    expect(screen.getByText(/Speed Demon/i)).toBeInTheDocument();
+
+    // Sign Out button is accessible
+    const signOutBtn = screen.getByRole('button', { name: /Sign Out/i });
+    expect(signOutBtn).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(signOutBtn);
+    });
+
+    // Reverts to guest mode
+    expect(screen.queryByRole('link', { name: /Dashboard/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument();
   });
 });

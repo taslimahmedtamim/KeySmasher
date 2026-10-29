@@ -4,13 +4,13 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Zap, Swords, LayoutDashboard, Menu, X, User, LogIn, LogOut } from 'lucide-react';
+import { BookOpen, Zap, Swords, LayoutDashboard, Menu, X, User, LogIn, LogOut, Sparkles } from 'lucide-react';
+import { useAuth } from '@/features/auth/AuthContext';
 
 export const Header: React.FC = () => {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  // Guest by default. Will be wired to Supabase Auth in Phase F.
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, isGuest, openAuthModal, signOut } = useAuth();
 
   // Primary navigation for public / guest users
   const publicNavItems = [
@@ -25,14 +25,10 @@ export const Header: React.FC = () => {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   ];
 
-  const currentNavItems = isAuthenticated ? authNavItems : publicNavItems;
-
-  const toggleDemoAuth = () => {
-    setIsAuthenticated(!isAuthenticated);
-  };
+  const currentNavItems = user ? authNavItems : publicNavItems;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-surface-border bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-surface-border bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         {/* Brand Logo & Name */}
         <Link
@@ -85,20 +81,29 @@ export const Header: React.FC = () => {
 
         {/* Right CTA / Auth controls */}
         <div className="hidden items-center gap-3 md:flex">
-          {isAuthenticated ? (
+          {user ? (
             <div className="flex items-center gap-2">
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-surface-muted px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:border-cyan-400"
+                className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-surface px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-cyan-400 hover:text-white transition-all shadow-sm"
               >
-                <User className="h-3.5 w-3.5 text-cyan-400" />
-                <span>My Profile</span>
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-300 font-bold font-mono text-[11px]">
+                  {user.username.charAt(0).toUpperCase()}
+                </div>
+                <span>{user.displayName || user.username}</span>
+                {user.isDemo && (
+                  <span className="rounded bg-purple-500/20 px-1 py-0.2 font-mono text-[9px] font-bold text-purple-300">
+                    DEMO
+                  </span>
+                )}
               </Link>
+
               <button
                 type="button"
-                onClick={toggleDemoAuth}
-                className="rounded-lg border border-slate-700 p-1.5 text-slate-400 hover:text-rose-400 hover:border-rose-500/50 transition-colors"
-                title="Sign Out (Demo)"
+                onClick={() => signOut()}
+                className="rounded-lg border border-slate-800 p-2 text-slate-400 hover:text-rose-400 hover:border-rose-500/50 transition-colors"
+                title="Sign Out"
+                aria-label="Sign Out"
               >
                 <LogOut className="h-4 w-4" />
               </button>
@@ -107,7 +112,7 @@ export const Header: React.FC = () => {
             <button
               type="button"
               id="auth-sign-in-btn"
-              onClick={toggleDemoAuth}
+              onClick={() => openAuthModal('signin')}
               className="flex items-center gap-1.5 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-cyan-400 hover:shadow-neon-cyan active:scale-95"
             >
               <LogIn className="h-4 w-4" />
@@ -153,17 +158,38 @@ export const Header: React.FC = () => {
                 </Link>
               );
             })}
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  toggleDemoAuth();
-                }}
-                className="w-full rounded-lg bg-cyan-500 py-2 text-center text-sm font-semibold text-slate-950 hover:bg-cyan-400"
-              >
-                {isAuthenticated ? 'Sign Out' : 'Sign In'}
-              </button>
+            <div className="pt-2 border-t border-surface-border">
+              {user ? (
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-white">{user.username}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      signOut();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-1 text-xs text-rose-400"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openAuthModal('signin');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-cyan-500 py-2 text-xs font-bold text-slate-950"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span>Sign In</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
