@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import {
   SavedTestSession,
@@ -16,142 +16,21 @@ import {
   AcademyMasterySummary,
 } from './types';
 
-// Realistic pre-seeded demo records for the Demo Typist ("SpeedDemon")
-const DEMO_SEEDED_SESSIONS: SavedTestSession[] = [
-  {
-    id: 'demo-1',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 6, // 6 days ago
-    mode: 'time',
-    rawWpm: 92,
-    netWpm: 88,
-    accuracy: 96,
-    cpm: 460,
-    consistency: 84,
-    elapsedSeconds: 60,
-    difficulty: 'intermediate',
-    errorCount: 3,
-  },
-  {
-    id: 'demo-2',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 5, // 5 days ago
-    mode: 'time',
-    rawWpm: 97,
-    netWpm: 94,
-    accuracy: 97,
-    cpm: 485,
-    consistency: 88,
-    elapsedSeconds: 60,
-    difficulty: 'intermediate',
-    errorCount: 2,
-  },
-  {
-    id: 'demo-3',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 4,
-    mode: 'words',
-    rawWpm: 104,
-    netWpm: 101,
-    accuracy: 98,
-    cpm: 520,
-    consistency: 91,
-    elapsedSeconds: 28,
-    difficulty: 'intermediate',
-    errorCount: 1,
-  },
-  {
-    id: 'demo-4',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 3,
-    mode: 'time',
-    rawWpm: 108,
-    netWpm: 105,
-    accuracy: 97,
-    cpm: 540,
-    consistency: 89,
-    elapsedSeconds: 30,
-    difficulty: 'intermediate',
-    errorCount: 2,
-  },
-  {
-    id: 'demo-5',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 2,
-    mode: 'quote',
-    rawWpm: 102,
-    netWpm: 99,
-    accuracy: 98,
-    cpm: 510,
-    consistency: 93,
-    elapsedSeconds: 34,
-    difficulty: 'intermediate',
-    errorCount: 1,
-  },
-  {
-    id: 'demo-6',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 2 + 1000 * 60 * 45,
-    mode: 'time',
-    rawWpm: 114,
-    netWpm: 110,
-    accuracy: 98,
-    cpm: 570,
-    consistency: 92,
-    elapsedSeconds: 60,
-    difficulty: 'intermediate',
-    errorCount: 2,
-  },
-  {
-    id: 'demo-7',
-    timestamp: Date.now() - 1000 * 60 * 60 * 18, // 18 hours ago
-    mode: 'words',
-    rawWpm: 118,
-    netWpm: 115,
-    accuracy: 98,
-    cpm: 590,
-    consistency: 94,
-    elapsedSeconds: 24,
-    difficulty: 'intermediate',
-    errorCount: 1,
-  },
-  {
-    id: 'demo-8',
-    timestamp: Date.now() - 1000 * 60 * 60 * 6, // 6 hours ago
-    mode: 'time',
-    rawWpm: 122,
-    netWpm: 119,
-    accuracy: 99,
-    cpm: 610,
-    consistency: 96,
-    elapsedSeconds: 30,
-    difficulty: 'intermediate',
-    errorCount: 1,
-  },
-  {
-    id: 'demo-9',
-    timestamp: Date.now() - 1000 * 60 * 30, // 30 minutes ago
-    mode: 'time',
-    rawWpm: 125,
-    netWpm: 122,
-    accuracy: 99,
-    cpm: 625,
-    consistency: 95,
-    elapsedSeconds: 15,
-    difficulty: 'intermediate',
-    errorCount: 0,
-  },
-];
-
 const PRESET_DEFINITIONS: {
   preset: string;
   label: string;
-  category: 'time' | 'words' | 'quote' | 'custom';
-  defaultBest: { wpm: number; accuracy: number; consistency: number };
+  category: 'time' | 'words' | 'quote';
+  targetValue?: number;
 }[] = [
-  { preset: 'time-15', label: '15 Seconds', category: 'time', defaultBest: { wpm: 122, accuracy: 99, consistency: 95 } },
-  { preset: 'time-30', label: '30 Seconds', category: 'time', defaultBest: { wpm: 119, accuracy: 99, consistency: 96 } },
-  { preset: 'time-60', label: '60 Seconds', category: 'time', defaultBest: { wpm: 110, accuracy: 98, consistency: 92 } },
-  { preset: 'time-120', label: '120 Seconds', category: 'time', defaultBest: { wpm: 104, accuracy: 97, consistency: 90 } },
-  { preset: 'words-10', label: '10 Words', category: 'words', defaultBest: { wpm: 128, accuracy: 100, consistency: 97 } },
-  { preset: 'words-25', label: '25 Words', category: 'words', defaultBest: { wpm: 118, accuracy: 99, consistency: 94 } },
-  { preset: 'words-50', label: '50 Words', category: 'words', defaultBest: { wpm: 115, accuracy: 98, consistency: 94 } },
-  { preset: 'words-100', label: '100 Words', category: 'words', defaultBest: { wpm: 108, accuracy: 98, consistency: 91 } },
-  { preset: 'quote', label: 'Quote Mode', category: 'quote', defaultBest: { wpm: 99, accuracy: 98, consistency: 93 } },
+  { preset: 'time-15', label: '15 Seconds', category: 'time', targetValue: 15 },
+  { preset: 'time-30', label: '30 Seconds', category: 'time', targetValue: 30 },
+  { preset: 'time-60', label: '60 Seconds', category: 'time', targetValue: 60 },
+  { preset: 'time-120', label: '120 Seconds', category: 'time', targetValue: 120 },
+  { preset: 'words-10', label: '10 Words', category: 'words', targetValue: 10 },
+  { preset: 'words-25', label: '25 Words', category: 'words', targetValue: 25 },
+  { preset: 'words-50', label: '50 Words', category: 'words', targetValue: 50 },
+  { preset: 'words-100', label: '100 Words', category: 'words', targetValue: 100 },
+  { preset: 'quote', label: 'Quote Mode', category: 'quote' },
 ];
 
 function calculateDailyStreak(timestamps: number[]): number {
@@ -187,7 +66,7 @@ function calculateDailyStreak(timestamps: number[]): number {
 
   if (!checkDate) return 0;
 
-  let pointer = new Date(checkDate);
+  const pointer = new Date(checkDate);
   while (true) {
     const key = `${pointer.getFullYear()}-${String(pointer.getMonth() + 1).padStart(2, '0')}-${String(
       pointer.getDate()
@@ -208,28 +87,20 @@ export function useUserAnalytics(): UserAnalyticsData & {
   exportHistoryCsv: () => void;
   refreshAnalytics: () => void;
 } {
-  const { user, isGuest } = useAuth();
+  const { user } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
 
   const refreshAnalytics = useCallback(() => {
     setRefreshKey((k) => k + 1);
   }, []);
 
-  // Compute active sessions based on user state
+  // ONLY real sessions completed by the user in storage
   const sessions = useMemo(() => {
-    // Explicitly reference refreshKey so manual refresh triggers re-evaluation
     if (refreshKey < 0) return [];
-    const local = getStoredSessions();
+    return getStoredSessions();
+  }, [refreshKey]);
 
-    if (user?.isDemo) {
-      // Merge demo seeded history with any fresh local tests
-      return [...local, ...DEMO_SEEDED_SESSIONS].sort((a, b) => b.timestamp - a.timestamp);
-    }
-
-    return local;
-  }, [user, refreshKey]);
-
-  // Compute Headline Summary KPIs
+  // Compute Headline Summary KPIs from real data ONLY
   const summary: AnalyticsSummary = useMemo(() => {
     if (sessions.length === 0) {
       return {
@@ -238,15 +109,15 @@ export function useUserAnalytics(): UserAnalyticsData & {
         totalWords: 0,
         peakWpm: 0,
         avgWpm: 0,
-        avgAccuracy: 100,
-        avgConsistency: 100,
+        avgAccuracy: 0,
+        avgConsistency: 0,
         dailyStreak: 0,
         wpmGain: 0,
       };
     }
 
     const totalTests = sessions.length;
-    const totalTimeSeconds = sessions.reduce((acc, s) => acc + (s.elapsedSeconds || 30), 0);
+    const totalTimeSeconds = sessions.reduce((acc, s) => acc + (s.elapsedSeconds || 0), 0);
     const totalWords = Math.round(
       sessions.reduce((acc, s) => acc + (s.netWpm * (s.elapsedSeconds || 30)) / 60, 0)
     );
@@ -262,9 +133,9 @@ export function useUserAnalytics(): UserAnalyticsData & {
     const timestamps = sessions.map((s) => s.timestamp);
     const dailyStreak = calculateDailyStreak(timestamps);
 
-    // Calculate progression gain (recent 5 vs oldest 5)
+    // Progression gain between recent tests and initial tests
     let wpmGain = 0;
-    if (sessions.length >= 3) {
+    if (sessions.length >= 2) {
       const recent = sessions.slice(0, Math.min(5, sessions.length));
       const oldest = sessions.slice(-Math.min(5, sessions.length));
       const recentAvg = recent.reduce((a, s) => a + s.netWpm, 0) / recent.length;
@@ -280,22 +151,29 @@ export function useUserAnalytics(): UserAnalyticsData & {
       avgWpm,
       avgAccuracy,
       avgConsistency,
-      dailyStreak: dailyStreak > 0 ? dailyStreak : user?.isDemo ? 3 : 0,
+      dailyStreak,
       wpmGain,
     };
-  }, [sessions, user]);
+  }, [sessions]);
 
-  // Compute Personal Bests across Presets
+  // Compute Personal Bests across Presets from real data ONLY
   const personalBests: PersonalBestRecord[] = useMemo(() => {
     return PRESET_DEFINITIONS.map((def) => {
-      // Find matching session in user records
       const matching = sessions.filter((s) => {
-        if (def.category === 'quote') return s.mode === 'quote';
-        if (def.category === 'time') {
-          const targetSec = parseInt(def.preset.replace('time-', ''), 10);
-          return s.mode === 'time' && s.elapsedSeconds === targetSec;
+        if (def.category === 'quote') {
+          return s.mode === 'quote';
         }
-        return s.mode === def.category;
+        if (def.category === 'time') {
+          return (
+            s.mode === 'time' &&
+            (s.targetDuration === def.targetValue ||
+              (!s.targetDuration && s.elapsedSeconds === def.targetValue))
+          );
+        }
+        if (def.category === 'words') {
+          return s.mode === 'words' && s.targetWords === def.targetValue;
+        }
+        return false;
       });
 
       if (matching.length > 0) {
@@ -312,21 +190,7 @@ export function useUserAnalytics(): UserAnalyticsData & {
         };
       }
 
-      // If Demo user and no custom match, use realistic demo benchmark
-      if (user?.isDemo) {
-        return {
-          preset: def.preset,
-          label: def.label,
-          category: def.category,
-          wpm: def.defaultBest.wpm,
-          rawWpm: def.defaultBest.wpm + 5,
-          accuracy: def.defaultBest.accuracy,
-          consistency: def.defaultBest.consistency,
-          timestamp: Date.now() - 1000 * 60 * 60 * 24 * 2,
-        };
-      }
-
-      // Empty benchmark
+      // No record exists yet for this preset
       return {
         preset: def.preset,
         label: def.label,
@@ -338,11 +202,10 @@ export function useUserAnalytics(): UserAnalyticsData & {
         timestamp: 0,
       };
     });
-  }, [sessions, user]);
+  }, [sessions]);
 
-  // Compute chronological progression points for interactive charts
+  // Chronological progression points from real data ONLY
   const progression: ProgressionPoint[] = useMemo(() => {
-    // Reverse sessions so they are chronological (oldest to newest)
     const chronological = [...sessions].sort((a, b) => a.timestamp - b.timestamp);
 
     return chronological.map((s, idx) => ({
@@ -356,16 +219,16 @@ export function useUserAnalytics(): UserAnalyticsData & {
       mode: s.mode,
       preset:
         s.mode === 'time'
-          ? `${s.elapsedSeconds}s`
+          ? `${s.targetDuration || s.elapsedSeconds}s`
           : s.mode === 'words'
-          ? 'words'
+          ? `${s.targetWords || 25}w`
           : s.mode === 'quote'
-          ? 'quote'
-          : 'custom',
+          ? 'Quote'
+          : 'Custom',
     }));
   }, [sessions]);
 
-  // Compute Academy Mastery Breakdown
+  // Real Academy Mastery Breakdown from actual completed lessons ONLY
   const academy: AcademyMasterySummary = useMemo(() => {
     if (refreshKey < 0) return { totalCompleted: 0, totalStars: 0, maxStars: 0, levels: [] };
     const rawProgress = getAllLessonProgress();
@@ -381,12 +244,10 @@ export function useUserAnalytics(): UserAnalyticsData & {
       course.lessons.forEach((lesson) => {
         const prog = rawProgress[lesson.id];
         if (prog) {
-          levelStars += prog.stars;
-          if (prog.completed) levelCompleted++;
-        } else if (user?.isDemo && course.id === 'beginner') {
-          // Demo user has level 1 mastered
-          levelStars += 3;
-          levelCompleted++;
+          levelStars += prog.stars || 0;
+          if (prog.completed && prog.stars > 0) {
+            levelCompleted++;
+          }
         }
       });
 
@@ -410,7 +271,7 @@ export function useUserAnalytics(): UserAnalyticsData & {
       maxStars,
       levels,
     };
-  }, [user, refreshKey]);
+  }, [refreshKey]);
 
   // JSON Export Trigger
   const exportHistoryJson = useCallback(() => {
@@ -418,7 +279,7 @@ export function useUserAnalytics(): UserAnalyticsData & {
       user: user?.username || 'guest',
       exportDate: new Date().toISOString(),
       summary,
-      personalBests,
+      personalBests: personalBests.filter((pb) => pb.wpm > 0),
       sessions,
     };
 
@@ -428,7 +289,7 @@ export function useUserAnalytics(): UserAnalyticsData & {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `keysmasher-analytics-${user?.username || 'guest'}-${Date.now()}.json`;
+    a.download = `keysmasher-analytics-${user?.username || 'user'}-${Date.now()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -441,6 +302,7 @@ export function useUserAnalytics(): UserAnalyticsData & {
       'ID',
       'Date',
       'Mode',
+      'Preset',
       'Net WPM',
       'Raw WPM',
       'Accuracy %',
@@ -453,6 +315,7 @@ export function useUserAnalytics(): UserAnalyticsData & {
       s.id,
       new Date(s.timestamp).toISOString(),
       s.mode,
+      s.targetDuration ? `${s.targetDuration}s` : s.targetWords ? `${s.targetWords}w` : s.mode,
       s.netWpm,
       s.rawWpm,
       s.accuracy,
@@ -470,7 +333,7 @@ export function useUserAnalytics(): UserAnalyticsData & {
     a.setAttribute('href', encodedUri);
     a.setAttribute(
       'download',
-      `keysmasher-sessions-${user?.username || 'guest'}-${Date.now()}.csv`
+      `keysmasher-sessions-${user?.username || 'user'}-${Date.now()}.csv`
     );
     document.body.appendChild(a);
     a.click();

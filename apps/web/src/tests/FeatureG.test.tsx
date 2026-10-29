@@ -3,6 +3,7 @@ import { render, screen, fireEvent, act, renderHook } from '@testing-library/rea
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { useUserAnalytics } from '@/features/dashboard/useUserAnalytics';
+import { saveSessionResult, clearStoredSessions } from '@/features/typing/utils/historyStorage';
 import DashboardPage from '@/app/dashboard/page';
 
 const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -11,6 +12,7 @@ const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 describe('Feature G: User Dashboard & Analytics', () => {
   beforeEach(() => {
+    clearStoredSessions();
     try {
       window.localStorage.clear();
     } catch {
@@ -53,8 +55,35 @@ describe('Feature G: User Dashboard & Analytics', () => {
     });
   });
 
-  describe('useUserAnalytics Hook & Metrics Computation', () => {
-    it('provides structured metrics, personal bests, and seed records for Demo user', async () => {
+  describe('useUserAnalytics Hook & Real Data Computation', () => {
+    it('computes metrics strictly from real saved sessions', async () => {
+      // Save 2 real completed sessions
+      saveSessionResult({
+        mode: 'time',
+        rawWpm: 110,
+        netWpm: 105,
+        accuracy: 98,
+        cpm: 525,
+        consistency: 92,
+        elapsedSeconds: 60,
+        difficulty: 'intermediate',
+        errorCount: 2,
+        targetDuration: 60,
+      });
+
+      saveSessionResult({
+        mode: 'words',
+        rawWpm: 120,
+        netWpm: 118,
+        accuracy: 99,
+        cpm: 590,
+        consistency: 95,
+        elapsedSeconds: 25,
+        difficulty: 'intermediate',
+        errorCount: 1,
+        targetWords: 50,
+      });
+
       const { result } = renderHook(
         () => {
           const auth = useAuth();
@@ -71,28 +100,29 @@ describe('Feature G: User Dashboard & Analytics', () => {
 
       const { analytics } = result.current;
 
-      // Check summary
-      expect(analytics.summary.totalTests).toBeGreaterThanOrEqual(9);
-      expect(analytics.summary.peakWpm).toBeGreaterThanOrEqual(100);
-      expect(analytics.summary.avgAccuracy).toBeGreaterThanOrEqual(95);
-      expect(analytics.summary.avgConsistency).toBeGreaterThanOrEqual(80);
+      // Check real summary computation
+      expect(analytics.summary.totalTests).toBe(2);
+      expect(analytics.summary.peakWpm).toBe(118);
+      expect(analytics.summary.avgWpm).toBe(112); // (105 + 118) / 2 = 111.5 -> 112
+      expect(analytics.summary.avgAccuracy).toBe(99); // (98 + 99) / 2 = 98.5 -> 99
 
-      // Check personal bests
-      expect(analytics.personalBests.length).toBeGreaterThanOrEqual(8);
+      // Check personal bests: time-60 should be 105, words-50 should be 118, others 0
       const time60 = analytics.personalBests.find((p) => p.preset === 'time-60');
-      expect(time60).toBeDefined();
-      expect(time60?.wpm).toBeGreaterThan(0);
+      expect(time60?.wpm).toBe(105);
 
-      // Check academy mastery
-      expect(analytics.academy.levels.length).toBe(5);
-      expect(analytics.academy.totalStars).toBeGreaterThan(0);
+      const words50 = analytics.personalBests.find((p) => p.preset === 'words-50');
+      expect(words50?.wpm).toBe(118);
+
+      const time15 = analytics.personalBests.find((p) => p.preset === 'time-15');
+      expect(time15?.wpm).toBe(0); // Not tested yet!
 
       // Check chronological progression
-      expect(analytics.progression.length).toBe(analytics.sessions.length);
+      expect(analytics.progression.length).toBe(2);
       expect(analytics.progression[0].testIndex).toBe(1);
+      expect(analytics.progression[1].testIndex).toBe(2);
     });
 
-    it('exports history JSON without throwing errors', async () => {
+    it('exports history JSON and CSV without throwing errors', async () => {
       // Mock URL.createObjectURL and revokeObjectURL
       const createObjectURLMock = vi.fn().mockReturnValue('blob:mock-url');
       const revokeObjectURLMock = vi.fn();
@@ -115,11 +145,28 @@ describe('Feature G: User Dashboard & Analytics', () => {
       expect(() => {
         result.current.analytics.exportHistoryJson();
       }).not.toThrow();
+
+      expect(() => {
+        result.current.analytics.exportHistoryCsv();
+      }).not.toThrow();
     });
   });
 
   describe('Authenticated Dashboard Page Rendering', () => {
-    it('renders all 5 core dashboard sections when authenticated', async () => {
+    it('renders all core dashboard sections with real data', async () => {
+      saveSessionResult({
+        mode: 'time',
+        rawWpm: 95,
+        netWpm: 90,
+        accuracy: 97,
+        cpm: 450,
+        consistency: 91,
+        elapsedSeconds: 60,
+        difficulty: 'intermediate',
+        errorCount: 3,
+        targetDuration: 60,
+      });
+
       const TestWrapper: React.FC = () => {
         const { signInWithDemo } = useAuth();
         React.useEffect(() => {
@@ -137,12 +184,13 @@ describe('Feature G: User Dashboard & Analytics', () => {
       // 1. Banner
       expect(screen.getByText('Speed Demon')).toBeInTheDocument();
       expect(screen.getByText('Tests Taken')).toBeInTheDocument();
+      expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(1);
 
       // 2. KPI Cards
       expect(screen.getByText('Peak Speed')).toBeInTheDocument();
       expect(screen.getByText('Average Speed')).toBeInTheDocument();
-      expect(screen.getAllByText('Accuracy').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('Consistency').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/Accuracy/i).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/Consistency/i).length).toBeGreaterThanOrEqual(1);
 
       // 3. Progression Chart
       expect(screen.getByText('Speed & Precision Progression')).toBeInTheDocument();

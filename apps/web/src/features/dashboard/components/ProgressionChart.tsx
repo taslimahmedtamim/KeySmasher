@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { LineChart, Sparkles, Filter, Play, Info } from 'lucide-react';
+import { LineChart, Play } from 'lucide-react';
 import { ProgressionPoint } from '../types';
 
 interface ProgressionChartProps {
@@ -19,7 +19,7 @@ export const ProgressionChart: React.FC<ProgressionChartProps> = ({ points }) =>
     return points.filter((p) => p.mode === filterMode || p.preset.includes(filterMode));
   }, [points, filterMode]);
 
-  // Handle empty state
+  // Handle empty state (0 tests in history)
   if (points.length === 0) {
     return (
       <div className="rounded-3xl border border-surface-border bg-surface p-8 text-center shadow-neon-card">
@@ -28,7 +28,7 @@ export const ProgressionChart: React.FC<ProgressionChartProps> = ({ points }) =>
         </div>
         <h3 className="mt-4 text-lg font-bold text-white">No Speed Tests Recorded Yet</h3>
         <p className="mt-1 text-xs text-slate-400 max-w-sm mx-auto">
-          Complete your first practice session or academy lesson to begin graphing your speed
+          Complete your first practice test or academy exercise to begin plotting your speed
           progression over time.
         </p>
         <Link
@@ -42,14 +42,16 @@ export const ProgressionChart: React.FC<ProgressionChartProps> = ({ points }) =>
     );
   }
 
-  // Chart dimensions
+  // Chart dimensions with generous padding to prevent edge clipping
   const width = 800;
-  const height = 260;
-  const paddingX = 45;
-  const paddingY = 35;
+  const height = 280;
+  const paddingLeft = 60;
+  const paddingRight = 40;
+  const paddingTop = 40;
+  const paddingBottom = 45;
 
-  const chartW = width - paddingX * 2;
-  const chartH = height - paddingY * 2;
+  const chartW = width - paddingLeft - paddingRight;
+  const chartH = height - paddingTop - paddingBottom;
 
   // Min and Max values for scale
   const wpmValues = filteredPoints.map((p) => p.netWpm);
@@ -61,16 +63,16 @@ export const ProgressionChart: React.FC<ProgressionChartProps> = ({ points }) =>
   const coordinates = filteredPoints.map((p, idx) => {
     const x =
       filteredPoints.length === 1
-        ? width / 2
-        : paddingX + (idx / (filteredPoints.length - 1)) * chartW;
-    const y = height - paddingY - ((p.netWpm - minWpm) / wpmRange) * chartH;
-    const rawY = height - paddingY - ((p.rawWpm - minWpm) / wpmRange) * chartH;
+        ? paddingLeft + chartW / 2
+        : paddingLeft + (idx / (filteredPoints.length - 1)) * chartW;
+    const y = paddingTop + chartH - ((p.netWpm - minWpm) / wpmRange) * chartH;
+    const rawY = paddingTop + chartH - ((p.rawWpm - minWpm) / wpmRange) * chartH;
     return { ...p, x, y, rawY };
   });
 
   // SVG Paths
   const netLinePath =
-    coordinates.length > 0
+    coordinates.length > 1
       ? coordinates.reduce(
           (acc, pt, idx) => (idx === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`),
           ''
@@ -78,7 +80,7 @@ export const ProgressionChart: React.FC<ProgressionChartProps> = ({ points }) =>
       : '';
 
   const rawLinePath =
-    coordinates.length > 0
+    coordinates.length > 1
       ? coordinates.reduce(
           (acc, pt, idx) => (idx === 0 ? `M ${pt.x} ${pt.rawY}` : `${acc} L ${pt.x} ${pt.rawY}`),
           ''
@@ -87,10 +89,10 @@ export const ProgressionChart: React.FC<ProgressionChartProps> = ({ points }) =>
 
   // Area path for gradient under net WPM line
   const areaPath =
-    coordinates.length > 0
+    coordinates.length > 1
       ? `${netLinePath} L ${coordinates[coordinates.length - 1].x} ${
-          height - paddingY
-        } L ${coordinates[0].x} ${height - paddingY} Z`
+          paddingTop + chartH
+        } L ${coordinates[0].x} ${paddingTop + chartH} Z`
       : '';
 
   // Horizontal Grid Lines
@@ -138,109 +140,115 @@ export const ProgressionChart: React.FC<ProgressionChartProps> = ({ points }) =>
       </div>
 
       {/* SVG Canvas Area */}
-      <div className="relative mt-4 w-full overflow-hidden select-none">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-auto overflow-visible"
-          onMouseLeave={() => setHoveredPoint(null)}
-        >
-          <defs>
-            <linearGradient id="progressionGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#22d3ee" stopOpacity="0.0" />
-            </linearGradient>
-            <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#22d3ee" floodOpacity="0.6" />
-            </filter>
-          </defs>
+      <div className="relative mt-4 w-full select-none">
+        {filteredPoints.length > 0 ? (
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="w-full h-auto overflow-visible"
+            onMouseLeave={() => setHoveredPoint(null)}
+          >
+            <defs>
+              <linearGradient id="progressionGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="#22d3ee" stopOpacity="0.0" />
+              </linearGradient>
+              <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#22d3ee" floodOpacity="0.6" />
+              </filter>
+            </defs>
 
-          {/* Horizontal Grid lines and labels */}
-          {gridTicks.map((val) => {
-            const y = height - paddingY - ((val - minWpm) / wpmRange) * chartH;
-            return (
-              <g key={val} className="text-slate-600">
-                <line
-                  x1={paddingX}
-                  y1={y}
-                  x2={width - paddingX}
-                  y2={y}
-                  stroke="currentColor"
-                  strokeDasharray="4 4"
-                  strokeWidth="1"
-                  strokeOpacity="0.4"
-                />
-                <text
-                  x={paddingX - 8}
-                  y={y + 3.5}
-                  textAnchor="end"
-                  className="fill-slate-500 font-mono text-[10px]"
+            {/* Horizontal Grid lines and labels */}
+            {gridTicks.map((val) => {
+              const y = paddingTop + chartH - ((val - minWpm) / wpmRange) * chartH;
+              return (
+                <g key={val} className="text-slate-600">
+                  <line
+                    x1={paddingLeft}
+                    y1={y}
+                    x2={width - paddingRight}
+                    y2={y}
+                    stroke="currentColor"
+                    strokeDasharray="4 4"
+                    strokeWidth="1"
+                    strokeOpacity="0.35"
+                  />
+                  <text
+                    x={paddingLeft - 10}
+                    y={y + 3.5}
+                    textAnchor="end"
+                    className="fill-slate-500 font-mono text-[11px]"
+                  >
+                    {val} WPM
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Area Fill */}
+            {areaPath && <path d={areaPath} fill="url(#progressionGradient)" />}
+
+            {/* Raw WPM Line (Dashed Slate) */}
+            {rawLinePath && (
+              <path
+                d={rawLinePath}
+                fill="none"
+                stroke="#64748b"
+                strokeWidth="1.5"
+                strokeDasharray="3 3"
+                opacity="0.6"
+              />
+            )}
+
+            {/* Net WPM Line (Neon Cyan Glow) */}
+            {netLinePath && (
+              <path
+                d={netLinePath}
+                fill="none"
+                stroke="#22d3ee"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                filter="url(#neonGlow)"
+              />
+            )}
+
+            {/* Interactive Data Points */}
+            {coordinates.map((pt) => {
+              const isHovered = hoveredPoint?.id === pt.id;
+
+              return (
+                <g
+                  key={pt.id}
+                  className="cursor-pointer"
+                  onMouseEnter={() => setHoveredPoint(pt)}
                 >
-                  {val}
-                </text>
-              </g>
-            );
-          })}
+                  {/* Invisible hit target for smooth hovering */}
+                  <circle cx={pt.x} cy={pt.y} r={14} fill="transparent" />
 
-          {/* Area Fill */}
-          {areaPath && <path d={areaPath} fill="url(#progressionGradient)" />}
-
-          {/* Raw WPM Line (Dashed Slate) */}
-          {rawLinePath && (
-            <path
-              d={rawLinePath}
-              fill="none"
-              stroke="#64748b"
-              strokeWidth="1.5"
-              strokeDasharray="3 3"
-              opacity="0.6"
-            />
-          )}
-
-          {/* Net WPM Line (Neon Cyan Glow) */}
-          {netLinePath && (
-            <path
-              d={netLinePath}
-              fill="none"
-              stroke="#22d3ee"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              filter="url(#neonGlow)"
-            />
-          )}
-
-          {/* Interactive Data Points */}
-          {coordinates.map((pt) => {
-            const isHovered = hoveredPoint?.id === pt.id;
-
-            return (
-              <g
-                key={pt.id}
-                className="cursor-pointer"
-                onMouseEnter={() => setHoveredPoint(pt)}
-              >
-                {/* Invisible hit target for smooth hovering */}
-                <circle cx={pt.x} cy={pt.y} r={12} fill="transparent" />
-
-                {/* Visible Data Dot */}
-                <circle
-                  cx={pt.x}
-                  cy={pt.y}
-                  r={isHovered ? 6 : 3.5}
-                  className={`transition-all duration-150 ${
-                    isHovered
-                      ? 'fill-cyan-300 stroke-slate-950 stroke-2 drop-shadow-[0_0_8px_#22d3ee]'
-                      : 'fill-cyan-400 stroke-slate-900 stroke-1'
-                  }`}
-                />
-              </g>
-            );
-          })}
-        </svg>
+                  {/* Visible Data Dot */}
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r={isHovered ? 6 : 4}
+                    className={`transition-all duration-150 ${
+                      isHovered
+                        ? 'fill-cyan-300 stroke-slate-950 stroke-2 drop-shadow-[0_0_10px_#22d3ee]'
+                        : 'fill-cyan-400 stroke-slate-900 stroke-1'
+                    }`}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+        ) : (
+          <div className="py-12 text-center text-xs text-slate-500">
+            No tests match this filter yet.
+          </div>
+        )}
 
         {/* Hover Popover Tooltip */}
         {hoveredPoint && (
-          <div className="mt-3 flex items-center justify-between rounded-xl border border-cyan-500/40 bg-cyan-950/30 p-2.5 px-4 font-mono text-xs text-white shadow-neon-card animate-fade-in">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-500/40 bg-cyan-950/30 p-2.5 px-4 font-mono text-xs text-white shadow-neon-card animate-fade-in">
             <div className="flex items-center gap-2">
               <span className="rounded bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-bold text-cyan-300 uppercase">
                 Test #{hoveredPoint.testIndex} • {hoveredPoint.preset}
@@ -285,7 +293,7 @@ export const ProgressionChart: React.FC<ProgressionChartProps> = ({ points }) =>
           </div>
         </div>
         <div className="font-mono text-[10px] text-slate-500">
-          Showing {filteredPoints.length} test{filteredPoints.length === 1 ? '' : 's'}
+          {filteredPoints.length} test{filteredPoints.length === 1 ? '' : 's'} recorded
         </div>
       </div>
     </div>

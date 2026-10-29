@@ -150,7 +150,7 @@ export const SessionHistoryTable: React.FC<SessionHistoryTableProps> = ({
                   </td>
                   <td className="py-3 whitespace-nowrap">
                     <span
-                      className={`inline-flex rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase ${
+                      className={`inline-flex rounded-lg px-2.5 py-0.5 text-[10px] font-bold ${
                         session.mode === 'time'
                           ? 'border border-cyan-500/30 bg-cyan-500/10 text-cyan-300'
                           : session.mode === 'words'
@@ -160,7 +160,13 @@ export const SessionHistoryTable: React.FC<SessionHistoryTableProps> = ({
                           : 'border border-slate-700 bg-surface-muted text-slate-300'
                       }`}
                     >
-                      {session.mode} {session.elapsedSeconds ? `(${session.elapsedSeconds}s)` : ''}
+                      {session.mode === 'time'
+                        ? `Time ${session.targetDuration || session.elapsedSeconds}s`
+                        : session.mode === 'words'
+                        ? `${session.targetWords || 25} Words`
+                        : session.mode === 'quote'
+                        ? 'Quote Mode'
+                        : 'Custom'}
                     </span>
                   </td>
                   <td className="py-3 font-bold text-cyan-300 whitespace-nowrap">

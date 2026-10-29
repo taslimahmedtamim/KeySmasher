@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Trophy, Clock, Type, Quote, Play } from 'lucide-react';
+import { Trophy, Clock, FileText, Quote, Play } from 'lucide-react';
 import { PersonalBestRecord } from '../types';
 
 interface PersonalBestsGridProps {
@@ -61,27 +61,29 @@ export const PersonalBestsGrid: React.FC<PersonalBestsGridProps> = ({ records })
           return (
             <div
               key={record.preset}
-              className={`relative overflow-hidden rounded-2xl border p-4 transition-all ${
+              className={`relative overflow-hidden rounded-2xl border p-4 transition-all flex flex-col justify-between ${
                 hasRecord
                   ? 'border-surface-border bg-surface-muted/40 hover:border-amber-500/50 hover:shadow-neon-card'
-                  : 'border-dashed border-slate-800 bg-surface-muted/10 opacity-70'
+                  : 'border-dashed border-slate-800 bg-surface-muted/10 opacity-75'
               }`}
             >
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-slate-300">
-                  {record.category === 'time' && <Clock className="h-3 w-3 text-cyan-400" />}
-                  {record.category === 'words' && <Type className="h-3 w-3 text-purple-400" />}
-                  {record.category === 'quote' && <Quote className="h-3 w-3 text-amber-400" />}
+                  {record.category === 'time' && <Clock className="h-3.5 w-3.5 text-cyan-400" />}
+                  {record.category === 'words' && <FileText className="h-3.5 w-3.5 text-purple-400" />}
+                  {record.category === 'quote' && <Quote className="h-3.5 w-3.5 text-amber-400" />}
                   <span>{record.label}</span>
                 </span>
 
-                {hasRecord && (
+                {hasRecord ? (
                   <Trophy className="h-3.5 w-3.5 text-amber-400 fill-amber-400/20" />
+                ) : (
+                  <span className="text-[10px] text-slate-500 font-mono">—</span>
                 )}
               </div>
 
               {hasRecord ? (
-                <>
+                <div>
                   <div className="mt-3 flex items-baseline gap-1 font-mono">
                     <span className="text-2xl sm:text-3xl font-black text-white">
                       {record.wpm}
@@ -90,19 +92,19 @@ export const PersonalBestsGrid: React.FC<PersonalBestsGridProps> = ({ records })
                   </div>
 
                   <div className="mt-2 flex items-center justify-between text-[11px] font-mono border-t border-surface-border/50 pt-2">
-                    <span className="text-emerald-400">{record.accuracy}% acc</span>
-                    <span className="text-purple-400">{record.consistency}% con</span>
+                    <span className="text-emerald-400 font-semibold">{record.accuracy}% acc</span>
+                    <span className="text-purple-400 font-semibold">{record.consistency}% con</span>
                   </div>
-                </>
+                </div>
               ) : (
-                <div className="mt-4 text-center">
-                  <div className="text-sm font-semibold text-slate-500">— WPM</div>
+                <div className="mt-4 text-center py-1">
+                  <div className="text-xs font-semibold text-slate-500">No Record Yet</div>
                   <Link
                     href="/practice"
-                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+                    className="mt-2 inline-flex items-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400 transition-all active:scale-95"
                   >
                     <Play className="h-2.5 w-2.5 fill-current" />
-                    <span>Set Record</span>
+                    <span>Play Preset</span>
                   </Link>
                 </div>
               )}

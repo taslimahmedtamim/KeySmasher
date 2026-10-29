@@ -9,6 +9,8 @@ interface KpiMetricsGridProps {
 }
 
 export const KpiMetricsGrid: React.FC<KpiMetricsGridProps> = ({ summary }) => {
+  const hasTests = summary.totalTests > 0;
+
   return (
     <div className="grid grid-cols-2 gap-3.5 sm:gap-4 lg:grid-cols-5">
       {/* 1. Peak Speed */}
@@ -22,8 +24,10 @@ export const KpiMetricsGrid: React.FC<KpiMetricsGridProps> = ({ summary }) => {
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-1 font-mono">
-          <span className="text-3xl font-black text-white">{summary.peakWpm || '—'}</span>
-          <span className="text-xs font-semibold text-slate-400">WPM</span>
+          <span className="text-3xl font-black text-white">
+            {hasTests ? summary.peakWpm : '—'}
+          </span>
+          {hasTests && <span className="text-xs font-semibold text-slate-400">WPM</span>}
         </div>
         <p className="mt-1 text-[11px] text-slate-400">All-time speed record</p>
       </div>
@@ -39,17 +43,19 @@ export const KpiMetricsGrid: React.FC<KpiMetricsGridProps> = ({ summary }) => {
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-1 font-mono">
-          <span className="text-3xl font-black text-cyan-300">{summary.avgWpm || '—'}</span>
-          <span className="text-xs font-semibold text-slate-400">WPM</span>
+          <span className="text-3xl font-black text-cyan-300">
+            {hasTests ? summary.avgWpm : '—'}
+          </span>
+          {hasTests && <span className="text-xs font-semibold text-slate-400">WPM</span>}
         </div>
         <div className="mt-1 flex items-center gap-1 text-[11px] text-cyan-400/90 font-medium">
           {summary.wpmGain > 0 ? (
             <>
               <TrendingUp className="h-3 w-3" />
-              <span>+{summary.wpmGain} WPM improvement</span>
+              <span>+{summary.wpmGain} WPM gain</span>
             </>
           ) : (
-            <span>Across all sessions</span>
+            <span>Across verified tests</span>
           )}
         </div>
       </div>
@@ -64,11 +70,10 @@ export const KpiMetricsGrid: React.FC<KpiMetricsGridProps> = ({ summary }) => {
             <Target className="h-4 w-4" />
           </div>
         </div>
-        <div className="mt-3 flex items-baseline gap-1 font-mono">
+        <div className="mt-3 flex items-baseline font-mono">
           <span className="text-3xl font-black text-emerald-300">
-            {summary.avgAccuracy || 100}
+            {hasTests ? `${summary.avgAccuracy}%` : '—'}
           </span>
-          <span className="text-xs font-semibold text-slate-400">%</span>
         </div>
         <p className="mt-1 text-[11px] text-slate-400">Precision keystroke ratio</p>
       </div>
@@ -83,11 +88,10 @@ export const KpiMetricsGrid: React.FC<KpiMetricsGridProps> = ({ summary }) => {
             <Activity className="h-4 w-4" />
           </div>
         </div>
-        <div className="mt-3 flex items-baseline gap-1 font-mono">
+        <div className="mt-3 flex items-baseline font-mono">
           <span className="text-3xl font-black text-purple-300">
-            {summary.avgConsistency || 90}
+            {hasTests ? `${summary.avgConsistency}%` : '—'}
           </span>
-          <span className="text-xs font-semibold text-slate-400">%</span>
         </div>
         <p className="mt-1 text-[11px] text-slate-400">Rhythm smoothness</p>
       </div>

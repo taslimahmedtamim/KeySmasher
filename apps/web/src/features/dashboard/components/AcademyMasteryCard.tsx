@@ -52,7 +52,7 @@ export const AcademyMasteryCard: React.FC<AcademyMasteryCardProps> = ({ academy 
         <div className="mt-2.5 h-2.5 w-full overflow-hidden rounded-full bg-surface-border">
           <div
             className="h-full rounded-full bg-gradient-to-r from-purple-500 to-cyan-400 transition-all duration-500 shadow-[0_0_12px_rgba(34,211,238,0.5)]"
-            style={{ width: `${Math.max(4, overallPercent)}%` }}
+            style={{ width: `${overallPercent}%` }}
           />
         </div>
       </div>

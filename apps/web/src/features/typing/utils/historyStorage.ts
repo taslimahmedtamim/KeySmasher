@@ -50,6 +50,8 @@ export interface SavedTestSession {
   elapsedSeconds: number;
   difficulty: PassageDifficulty;
   errorCount: number;
+  targetDuration?: number;
+  targetWords?: number;
 }
 
 export interface SessionStats {

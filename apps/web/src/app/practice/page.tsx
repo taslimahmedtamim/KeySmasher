@@ -86,11 +86,20 @@ export default function PracticePage() {
           elapsedSeconds: metrics.elapsedSeconds,
           difficulty: config.difficulty,
           errorCount: metrics.incorrectCharacters,
+          targetDuration: config.mode === 'time' ? config.durationSeconds : undefined,
+          targetWords: config.mode === 'words' ? config.targetWordCount : undefined,
         });
         setSessionHistory((prev) => [saved, ...prev].slice(0, 25));
       }
     }
-  }, [status, metrics, config.mode, config.difficulty]);
+  }, [
+    status,
+    metrics,
+    config.mode,
+    config.difficulty,
+    config.durationSeconds,
+    config.targetWordCount,
+  ]);
 
   const handleModeChange = (newMode: TestMode) => {
     if (newMode === 'custom') {
