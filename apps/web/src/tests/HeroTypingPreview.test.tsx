@@ -20,7 +20,7 @@ describe('HeroTypingPreview', () => {
 
     if (input) {
       fireEvent.change(input, { target: { value: 'smash' } });
-      expect(screen.getByText(/5\/55 characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/5\/55 chars/i)).toBeInTheDocument();
     }
   });
 
@@ -32,7 +32,7 @@ describe('HeroTypingPreview', () => {
       fireEvent.change(input, { target: { value: 'smash' } });
       const resetBtn = screen.getByRole('button', { name: /Reset/i });
       fireEvent.click(resetBtn);
-      expect(screen.getByText(/0\/55 characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/0\/55 chars/i)).toBeInTheDocument();
     }
   });
 });

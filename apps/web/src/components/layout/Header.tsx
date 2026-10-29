@@ -4,18 +4,32 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Zap, Swords, LayoutDashboard, Menu, X, Keyboard } from 'lucide-react';
+import { BookOpen, Zap, Swords, LayoutDashboard, Menu, X, Keyboard, User, LogIn, LogOut } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Guest by default. Will be wired to Supabase Auth in Phase F.
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const navItems = [
+  // Primary navigation for public / guest users
+  const publicNavItems = [
     { name: 'Learn', href: '/learn', icon: BookOpen },
     { name: 'Practice', href: '/practice', icon: Zap },
     { name: 'Compete', href: '/compete', icon: Swords },
+  ];
+
+  // Additional items available only after authentication
+  const authNavItems = [
+    ...publicNavItems,
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   ];
+
+  const currentNavItems = isAuthenticated ? authNavItems : publicNavItems;
+
+  const toggleDemoAuth = () => {
+    setIsAuthenticated(!isAuthenticated);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-surface-border bg-background/80 backdrop-blur-md">
@@ -46,9 +60,9 @@ export const Header: React.FC = () => {
           </div>
         </Link>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation (Dashboard only visible when authenticated) */}
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main Navigation">
-          {navItems.map((item) => {
+          {currentNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (
@@ -74,19 +88,41 @@ export const Header: React.FC = () => {
           <Link
             href="/practice"
             className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-surface px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-slate-600 hover:text-white"
-            title="Quick Practice (Ctrl + Enter)"
+            title="Quick Practice"
           >
             <Keyboard className="h-3.5 w-3.5 text-cyan-400" />
             <span>Quick Test</span>
           </Link>
-          <button
-            type="button"
-            id="auth-sign-in-btn"
-            onClick={() => alert('Authentication will be connected in Phase F (Supabase Integration).')}
-            className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-cyan-400 hover:shadow-neon-cyan active:scale-95"
-          >
-            Sign In
-          </button>
+
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-surface-muted px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:border-cyan-400"
+              >
+                <User className="h-3.5 w-3.5 text-cyan-400" />
+                <span>My Profile</span>
+              </Link>
+              <button
+                type="button"
+                onClick={toggleDemoAuth}
+                className="rounded-lg border border-slate-700 p-1.5 text-slate-400 hover:text-rose-400 hover:border-rose-500/50 transition-colors"
+                title="Sign Out (Demo)"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              id="auth-sign-in-btn"
+              onClick={toggleDemoAuth}
+              className="flex items-center gap-1.5 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-cyan-400 hover:shadow-neon-cyan active:scale-95"
+            >
+              <LogIn className="h-4 w-4" />
+              <span>Sign In</span>
+            </button>
+          )}
         </div>
 
         {/* Mobile menu button */}
@@ -107,7 +143,7 @@ export const Header: React.FC = () => {
       {mobileMenuOpen && (
         <div className="border-b border-surface-border bg-surface px-4 py-3 md:hidden">
           <div className="flex flex-col space-y-1">
-            {navItems.map((item) => {
+            {currentNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
               return (
@@ -131,11 +167,11 @@ export const Header: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  alert('Authentication will be connected in Phase F (Supabase Integration).');
+                  toggleDemoAuth();
                 }}
                 className="w-full rounded-lg bg-cyan-500 py-2 text-center text-sm font-semibold text-slate-950 hover:bg-cyan-400"
               >
-                Sign In
+                {isAuthenticated ? 'Sign Out' : 'Sign In'}
               </button>
             </div>
           </div>
