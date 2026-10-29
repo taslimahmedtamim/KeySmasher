@@ -75,3 +75,31 @@ export function calculateTypingMetrics(input: TypingMetricsInput): TypingMetrics
     totalTypedCharacters,
   };
 }
+
+/**
+ * Calculates typing consistency score percentage (0 - 100%).
+ * Consistency is calculated as 100 * (1 - Coefficient of Variation).
+ * Higher score means the typing pace was steady throughout the session.
+ */
+export function calculateConsistency(wpmSamples: number[]): number {
+  if (!wpmSamples || wpmSamples.length < 2) {
+    return 100;
+  }
+
+  const validSamples = wpmSamples.filter((w) => w > 0);
+  if (validSamples.length < 2) {
+    return 100;
+  }
+
+  const mean = validSamples.reduce((a, b) => a + b, 0) / validSamples.length;
+  if (mean === 0) return 0;
+
+  const variance =
+    validSamples.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / validSamples.length;
+  const stdDev = Math.sqrt(variance);
+
+  const cv = stdDev / mean;
+  const consistency = Math.max(0, Math.min(100, Math.round((1 - cv) * 100)));
+  return consistency;
+}
+

@@ -5,6 +5,7 @@ import {
   WORD_LIST_ADVANCED,
   WORD_LIST_EXPERT,
 } from './words';
+import { getRandomQuote } from './quotes';
 
 export interface PassageGenerationOptions {
   mode: TestMode;
@@ -13,6 +14,8 @@ export interface PassageGenerationOptions {
   durationSeconds?: TimeDurationOption;
   includePunctuation?: boolean;
   includeNumbers?: boolean;
+  customText?: string;
+  quoteLength?: 'short' | 'medium' | 'long';
 }
 
 /**
@@ -37,12 +40,27 @@ function getWordCountForDuration(durationSeconds: TimeDurationOption = 30): numb
  * Generates a randomized typing passage based on difficulty and test configuration.
  */
 export function generatePassage(options: PassageGenerationOptions): string {
+  // Mode: Quote
+  if (options.mode === 'quote') {
+    return getRandomQuote(options.quoteLength).text;
+  }
+
+  // Mode: Custom text
+  if (options.mode === 'custom') {
+    const trimmed = (options.customText || '').trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+    return 'The quick brown fox jumps over the lazy dog to practice custom keystrokes.';
+  }
+
   const difficulty = options.difficulty || 'beginner';
 
   // For expert difficulty, select syntax/code snippets
   if (difficulty === 'expert') {
     const pool = [...WORD_LIST_EXPERT];
-    const count = options.mode === 'words' ? Math.max(1, Math.floor((options.targetWordCount || 25) / 8)) : 4;
+    const count =
+      options.mode === 'words' ? Math.max(1, Math.floor((options.targetWordCount || 25) / 8)) : 4;
     const selected: string[] = [];
     for (let i = 0; i < count; i++) {
       const idx = Math.floor(Math.random() * pool.length);
@@ -83,7 +101,7 @@ export function generatePassage(options: PassageGenerationOptions): string {
       attempts++;
     } while (candidate === prevWord && attempts < 10);
 
-    // Optional punctuation enrichment for intermediate/advanced
+    // Optional punctuation enrichment
     if (options.includePunctuation && i > 0 && i % 6 === 0) {
       const puncs = [',', '.', ';', '!'];
       const punc = puncs[Math.floor(Math.random() * puncs.length)];

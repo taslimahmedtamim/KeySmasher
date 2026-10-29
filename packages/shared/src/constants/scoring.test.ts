@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateTypingMetrics, STANDARD_WORD_LENGTH } from './scoring';
+import { calculateTypingMetrics, calculateConsistency, STANDARD_WORD_LENGTH } from './scoring';
 
 describe('calculateTypingMetrics', () => {
   it('should verify standard word length is 5', () => {
@@ -65,3 +65,26 @@ describe('calculateTypingMetrics', () => {
     expect(metrics.accuracy).toBe(20);
   });
 });
+
+describe('calculateConsistency', () => {
+  it('returns 100% when there are fewer than 2 samples', () => {
+    expect(calculateConsistency([])).toBe(100);
+    expect(calculateConsistency([60])).toBe(100);
+  });
+
+  it('returns 100% when all samples are identical', () => {
+    expect(calculateConsistency([80, 80, 80, 80])).toBe(100);
+  });
+
+  it('returns a high consistency score for steady pace with minor fluctuations', () => {
+    const consistency = calculateConsistency([70, 72, 71, 69, 70]);
+    expect(consistency).toBeGreaterThanOrEqual(95);
+  });
+
+  it('returns a lower consistency score for erratic speeds', () => {
+    const steady = calculateConsistency([60, 62, 61, 59, 60]);
+    const erratic = calculateConsistency([20, 90, 30, 100, 15]);
+    expect(erratic).toBeLessThan(steady);
+  });
+});
+

@@ -10,6 +10,8 @@ export type EngineStatus = 'idle' | 'active' | 'completed' | 'cancelled';
 
 export type CharacterState = 'pending' | 'correct' | 'incorrect' | 'extra';
 
+export type SoundTheme = 'off' | 'click' | 'clack' | 'thock';
+
 export interface RenderedChar {
   char: string;
   state: CharacterState;
@@ -35,6 +37,9 @@ export interface TypingEngineConfig {
   includePunctuation: boolean;
   includeNumbers: boolean;
   initialPassage?: string;
+  customText?: string;
+  quoteLength?: 'short' | 'medium' | 'long';
+  soundTheme?: SoundTheme;
 }
 
 export interface WpmHistoryPoint {
@@ -51,4 +56,5 @@ export interface ExtendedTypingMetrics extends TypingMetricsResult {
   totalWordsCount: number;
   missedCharacters: number;
   extraCharacters: number;
+  consistency: number;
 }

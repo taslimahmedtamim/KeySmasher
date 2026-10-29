@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generatePassage } from './generator';
+import { FAMOUS_QUOTES } from './quotes';
 
 describe('generatePassage', () => {
   it('generates the specified word count in words mode', () => {
@@ -50,5 +51,24 @@ describe('generatePassage', () => {
 
     expect(typeof passage).toBe('string');
     expect(passage.length).toBeGreaterThan(10);
+  });
+
+  it('generates a curated quote in quote mode', () => {
+    const passage = generatePassage({
+      mode: 'quote',
+    });
+
+    expect(typeof passage).toBe('string');
+    expect(FAMOUS_QUOTES.some((q) => q.text === passage)).toBe(true);
+  });
+
+  it('uses custom text in custom mode', () => {
+    const custom = 'My custom practice sentence for touch typing.';
+    const passage = generatePassage({
+      mode: 'custom',
+      customText: custom,
+    });
+
+    expect(passage).toBe(custom);
   });
 });

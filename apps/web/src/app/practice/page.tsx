@@ -1,21 +1,30 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import {
   Clock,
   Type,
-  Gauge,
+  Quote,
+  FileText,
   RotateCcw,
-  Sparkles,
-  Zap,
-  CheckCircle2,
-  AlertTriangle,
-  Flame,
-  ArrowRight,
   RefreshCw,
+  CheckCircle2,
+  Volume2,
+  VolumeX,
+  Copy,
+  Check,
+  Flame,
+  Zap,
+  Sparkles,
   Info,
   Eye,
   EyeOff,
+  Hash,
+  AtSign,
+  TrendingUp,
+  History,
+  Trash2,
 } from 'lucide-react';
 import {
   PassageDifficulty,
@@ -25,9 +34,25 @@ import {
 } from '@keysmasher/shared';
 import { useTypingEngine } from '@/features/typing/useTypingEngine';
 import { TypingArea } from '@/features/typing/components/TypingArea';
+import { WpmHistoryChart } from '@/features/typing/components/WpmHistoryChart';
+import { CustomTextModal } from '@/features/typing/components/CustomTextModal';
+import {
+  getStoredSessions,
+  saveSessionResult,
+  getSessionStats,
+  clearStoredSessions,
+  SavedTestSession,
+} from '@/features/typing/utils/historyStorage';
+import { SoundTheme } from '@/features/typing/types';
+import { playKeystrokeSound } from '@/features/typing/utils/soundEffects';
 
 export default function PracticePage() {
   const [zenMode, setZenMode] = useState(false);
+  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [sessionHistory, setSessionHistory] = useState<SavedTestSession[]>([]);
+  const savedTestRef = useRef<string | null>(null);
+
   const {
     status,
     config,
@@ -40,8 +65,48 @@ export default function PracticePage() {
     actions: { restart, handleKeyDown, handleInputChange, handlePaste, setConfig },
   } = useTypingEngine();
 
+  // Load guest session history on mount
+  useEffect(() => {
+    setSessionHistory(getStoredSessions());
+  }, []);
+
+  // Save completed session to local history
+  useEffect(() => {
+    if (status === 'completed' && metrics.elapsedSeconds > 0) {
+      const testKey = `${Date.now()}-${metrics.netWpm}-${metrics.totalTypedCharacters}`;
+      if (savedTestRef.current !== testKey) {
+        savedTestRef.current = testKey;
+        const saved = saveSessionResult({
+          mode: config.mode,
+          rawWpm: metrics.rawWpm,
+          netWpm: metrics.netWpm,
+          accuracy: metrics.accuracy,
+          cpm: metrics.cpm,
+          consistency: metrics.consistency,
+          elapsedSeconds: metrics.elapsedSeconds,
+          difficulty: config.difficulty,
+          errorCount: metrics.incorrectCharacters,
+        });
+        setSessionHistory((prev) => [saved, ...prev].slice(0, 25));
+      }
+    }
+  }, [status, metrics, config.mode, config.difficulty]);
+
   const handleModeChange = (newMode: TestMode) => {
-    setConfig((prev) => ({ ...prev, mode: newMode }));
+    if (newMode === 'custom') {
+      setIsCustomModalOpen(true);
+    } else {
+      setConfig((prev) => ({ ...prev, mode: newMode }));
+    }
+  };
+
+  const handleCustomTextApply = (customText: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      mode: 'custom',
+      customText,
+      initialPassage: customText,
+    }));
   };
 
   const handleDurationChange = (d: TimeDurationOption) => {
@@ -52,24 +117,71 @@ export default function PracticePage() {
     setConfig((prev) => ({ ...prev, targetWordCount: w }));
   };
 
+  const handleQuoteLengthChange = (len: 'short' | 'medium' | 'long') => {
+    setConfig((prev) => ({ ...prev, quoteLength: len }));
+  };
+
   const handleDifficultyChange = (diff: PassageDifficulty) => {
     setConfig((prev) => ({ ...prev, difficulty: diff }));
   };
 
+  const togglePunctuation = () => {
+    setConfig((prev) => ({ ...prev, includePunctuation: !prev.includePunctuation }));
+  };
+
+  const toggleNumbers = () => {
+    setConfig((prev) => ({ ...prev, includeNumbers: !prev.includeNumbers }));
+  };
+
+  const cycleSoundTheme = () => {
+    const themes: SoundTheme[] = ['off', 'click', 'clack', 'thock'];
+    const currentIdx = themes.indexOf(config.soundTheme || 'off');
+    const nextTheme = themes[(currentIdx + 1) % themes.length];
+    setConfig((prev) => ({ ...prev, soundTheme: nextTheme }));
+    if (nextTheme !== 'off') {
+      playKeystrokeSound(nextTheme, false);
+    }
+  };
+
+  const handleCopySummary = () => {
+    const modeLabel =
+      config.mode === 'time'
+        ? `${config.durationSeconds}s Time`
+        : config.mode === 'words'
+        ? `${config.targetWordCount} Words`
+        : config.mode === 'quote'
+        ? 'Quote'
+        : 'Custom';
+
+    const text = `⚡ KeySmasher Speed Test: ${Math.round(metrics.netWpm)} WPM (${Math.round(
+      metrics.rawWpm
+    )} Raw) | ${Math.round(metrics.accuracy)}% Acc | ${metrics.consistency}% Consistency | ${modeLabel}`;
+
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleClearHistory = () => {
+    clearStoredSessions();
+    setSessionHistory([]);
+  };
+
   const isCompleted = status === 'completed';
+  const sessionStats = getSessionStats(sessionHistory);
 
   return (
     <div className="py-8 md:py-12">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         {/* Controls Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-surface-border bg-surface/80 p-3.5 backdrop-blur">
-          {/* Mode Selector (Time vs Words) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-surface-border bg-surface/80 p-3.5 backdrop-blur shadow-sm">
+          {/* Mode Selector */}
           <div className="flex items-center gap-1 rounded-xl bg-surface-muted p-1">
             <button
               type="button"
               id="practice-mode-time"
               onClick={() => handleModeChange('time')}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
                 config.mode === 'time'
                   ? 'bg-cyan-500 text-slate-950 shadow-sm'
                   : 'text-slate-400 hover:text-white'
@@ -82,7 +194,7 @@ export default function PracticePage() {
               type="button"
               id="practice-mode-words"
               onClick={() => handleModeChange('words')}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
                 config.mode === 'words'
                   ? 'bg-cyan-500 text-slate-950 shadow-sm'
                   : 'text-slate-400 hover:text-white'
@@ -91,11 +203,37 @@ export default function PracticePage() {
               <Type className="h-3.5 w-3.5" />
               <span>Words</span>
             </button>
+            <button
+              type="button"
+              id="practice-mode-quote"
+              onClick={() => handleModeChange('quote')}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                config.mode === 'quote'
+                  ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Quote className="h-3.5 w-3.5" />
+              <span>Quote</span>
+            </button>
+            <button
+              type="button"
+              id="practice-mode-custom"
+              onClick={() => handleModeChange('custom')}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                config.mode === 'custom'
+                  ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              <span>Custom</span>
+            </button>
           </div>
 
-          {/* Config Option: Durations or Word counts */}
+          {/* Sub-options based on mode */}
           <div className="flex items-center gap-1.5">
-            {config.mode === 'time' ? (
+            {config.mode === 'time' && (
               <>
                 {([15, 30, 60, 120] as TimeDurationOption[]).map((d) => (
                   <button
@@ -112,7 +250,9 @@ export default function PracticePage() {
                   </button>
                 ))}
               </>
-            ) : (
+            )}
+
+            {config.mode === 'words' && (
               <>
                 {([10, 25, 50, 100] as WordCountOption[]).map((w) => (
                   <button
@@ -130,24 +270,114 @@ export default function PracticePage() {
                 ))}
               </>
             )}
+
+            {config.mode === 'quote' && (
+              <>
+                {(['short', 'medium', 'long'] as const).map((len) => (
+                  <button
+                    key={len}
+                    type="button"
+                    onClick={() => handleQuoteLengthChange(len)}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-medium capitalize transition-all ${
+                      (config.quoteLength || 'medium') === len
+                        ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {len}
+                  </button>
+                ))}
+              </>
+            )}
+
+            {config.mode === 'custom' && (
+              <button
+                type="button"
+                onClick={() => setIsCustomModalOpen(true)}
+                className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 transition-all"
+              >
+                Edit Text
+              </button>
+            )}
           </div>
 
-          {/* Difficulty selector */}
+          {/* Quick Toggles: Punctuation, Numbers, Sound, Difficulty */}
           <div className="flex items-center gap-1.5">
-            {(['beginner', 'intermediate', 'advanced', 'expert'] as PassageDifficulty[]).map((diff) => (
-              <button
-                key={diff}
-                type="button"
-                onClick={() => handleDifficultyChange(diff)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-medium capitalize transition-all ${
-                  config.difficulty === diff
-                    ? 'border border-purple-500/40 bg-purple-500/10 text-purple-300'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {diff}
-              </button>
-            ))}
+            {/* Punctuation toggle */}
+            <button
+              type="button"
+              id="practice-toggle-punctuation"
+              onClick={togglePunctuation}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-all ${
+                config.includePunctuation
+                  ? 'border border-amber-500/40 bg-amber-500/10 text-amber-300'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Toggle Punctuation symbols"
+            >
+              <AtSign className="h-3 w-3" />
+              <span>@#$</span>
+            </button>
+
+            {/* Numbers toggle */}
+            <button
+              type="button"
+              id="practice-toggle-numbers"
+              onClick={toggleNumbers}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-all ${
+                config.includeNumbers
+                  ? 'border border-amber-500/40 bg-amber-500/10 text-amber-300'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Toggle Numeric characters"
+            >
+              <Hash className="h-3 w-3" />
+              <span>123</span>
+            </button>
+
+            {/* Audio switch theme toggle */}
+            <button
+              type="button"
+              id="practice-toggle-sound"
+              onClick={cycleSoundTheme}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-all ${
+                config.soundTheme && config.soundTheme !== 'off'
+                  ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-300'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+              title={`Switch Sound: ${config.soundTheme || 'off'}. Click to cycle: Off -> Click -> Clack -> Thock`}
+            >
+              {config.soundTheme && config.soundTheme !== 'off' ? (
+                <Volume2 className="h-3.5 w-3.5" />
+              ) : (
+                <VolumeX className="h-3.5 w-3.5" />
+              )}
+              <span className="capitalize">
+                {!config.soundTheme || config.soundTheme === 'off' ? 'Mute' : config.soundTheme}
+              </span>
+            </button>
+
+            {/* Difficulty selector (when in time/words mode) */}
+            {(config.mode === 'time' || config.mode === 'words') && (
+              <div className="hidden sm:flex items-center gap-1 border-l border-surface-border pl-2">
+                {(['beginner', 'intermediate', 'advanced', 'expert'] as PassageDifficulty[]).map(
+                  (diff) => (
+                    <button
+                      key={diff}
+                      type="button"
+                      onClick={() => handleDifficultyChange(diff)}
+                      className={`rounded-lg px-2 py-0.5 text-[11px] font-medium capitalize transition-all ${
+                        config.difficulty === diff
+                          ? 'border border-purple-500/40 bg-purple-500/10 text-purple-300'
+                          : 'text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      {diff}
+                    </button>
+                  )
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -188,7 +418,7 @@ export default function PracticePage() {
               <div className="text-3xl font-black text-slate-200 font-mono tabular-nums">
                 {config.mode === 'time'
                   ? `${Math.max(0, Math.ceil(metrics.timeRemaining))}s`
-                  : `${metrics.completedWordsCount} / ${config.targetWordCount}`}
+                  : `${metrics.completedWordsCount} / ${metrics.totalWordsCount}`}
               </div>
             </div>
           </div>
@@ -203,7 +433,7 @@ export default function PracticePage() {
                   ? 'border-purple-500/40 bg-purple-950/30 text-purple-300'
                   : 'border-slate-700 bg-surface text-slate-400 hover:text-white'
               }`}
-              title="Zen Mode: Hide live WPM during typing to focus purely on the text"
+              title="Zen Mode: Hide live numbers while typing to focus solely on the text"
             >
               {zenMode ? <EyeOff className="h-3.5 w-3.5 text-purple-400" /> : <Eye className="h-3.5 w-3.5" />}
               <span>{zenMode ? 'Zen: On' : 'Zen: Off'}</span>
@@ -238,7 +468,7 @@ export default function PracticePage() {
           {isCompleted ? (
             /* Results Screen */
             <div className="py-6 text-center animate-fade-in">
-              <div className="mb-4 inline-flex rounded-full bg-emerald-500/10 p-3 text-emerald-400 border border-emerald-500/20">
+              <div className="mb-3 inline-flex rounded-full bg-emerald-500/10 p-3 text-emerald-400 border border-emerald-500/20">
                 <CheckCircle2 className="h-8 w-8" />
               </div>
 
@@ -246,53 +476,142 @@ export default function PracticePage() {
                 Test Completed!
               </h2>
 
-              <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4 max-w-2xl mx-auto">
+              <p className="mt-1 text-xs text-slate-400">
+                {config.mode === 'time'
+                  ? `${config.durationSeconds}s Time Test`
+                  : config.mode === 'words'
+                  ? `${config.targetWordCount} Words Test`
+                  : config.mode === 'quote'
+                  ? 'Quote Test'
+                  : 'Custom Test'}{' '}
+                • {config.difficulty} difficulty
+              </p>
+
+              {/* Primary 4 Key Metrics */}
+              <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 max-w-3xl mx-auto">
                 <div className="rounded-xl border border-surface-border bg-surface p-4">
                   <div className="text-xs uppercase font-bold text-slate-400">Net Speed</div>
-                  <div className="mt-1 text-3xl font-black text-cyan-400">{metrics.netWpm}</div>
-                  <div className="text-[10px] text-slate-500">WPM</div>
-                </div>
-
-                <div className="rounded-xl border border-surface-border bg-surface p-4">
-                  <div className="text-xs uppercase font-bold text-slate-400">Raw Speed</div>
-                  <div className="mt-1 text-3xl font-black text-white">{metrics.rawWpm}</div>
+                  <div className="mt-1 text-3xl font-black text-cyan-400 font-mono">
+                    {Math.round(metrics.netWpm)}
+                  </div>
                   <div className="text-[10px] text-slate-500">WPM</div>
                 </div>
 
                 <div className="rounded-xl border border-surface-border bg-surface p-4">
                   <div className="text-xs uppercase font-bold text-slate-400">Accuracy</div>
-                  <div className="mt-1 text-3xl font-black text-emerald-400">{metrics.accuracy}%</div>
+                  <div className="mt-1 text-3xl font-black text-emerald-400 font-mono">
+                    {Math.round(metrics.accuracy)}%
+                  </div>
                   <div className="text-[10px] text-slate-500">Correct Ratio</div>
                 </div>
 
                 <div className="rounded-xl border border-surface-border bg-surface p-4">
-                  <div className="text-xs uppercase font-bold text-slate-400">Characters</div>
-                  <div className="mt-1 text-lg font-bold text-slate-200">
-                    <span className="text-emerald-400">{metrics.correctCharacters}</span>
-                    <span className="text-slate-500"> / </span>
-                    <span className="text-rose-400">{metrics.incorrectCharacters}</span>
+                  <div className="text-xs uppercase font-bold text-slate-400">Raw Speed</div>
+                  <div className="mt-1 text-3xl font-black text-white font-mono">
+                    {Math.round(metrics.rawWpm)}
                   </div>
-                  <div className="text-[10px] text-slate-500">Correct / Errors</div>
+                  <div className="text-[10px] text-slate-500">WPM</div>
+                </div>
+
+                <div className="rounded-xl border border-surface-border bg-surface p-4">
+                  <div className="text-xs uppercase font-bold text-slate-400">Consistency</div>
+                  <div className="mt-1 text-3xl font-black text-purple-400 font-mono">
+                    {metrics.consistency}%
+                  </div>
+                  <div className="text-[10px] text-slate-500">Rhythm Score</div>
                 </div>
               </div>
 
-              <div className="mt-8 flex items-center justify-center gap-3">
+              {/* Sub-stats Grid */}
+              <div className="mt-4 grid grid-cols-3 gap-3 max-w-xl mx-auto text-xs font-mono">
+                <div className="rounded-lg border border-surface-border bg-surface/60 p-2.5">
+                  <div className="text-[10px] text-slate-500 uppercase font-semibold">Characters</div>
+                  <div className="mt-1 text-slate-200">
+                    <span className="text-emerald-400 font-bold">{metrics.correctCharacters}</span>
+                    <span className="text-slate-600"> / </span>
+                    <span className="text-rose-400 font-bold">{metrics.incorrectCharacters}</span>
+                    <span className="text-slate-600"> / </span>
+                    <span className="text-amber-400">{metrics.extraCharacters}</span>
+                  </div>
+                  <div className="text-[9px] text-slate-500">ok / err / extra</div>
+                </div>
+
+                <div className="rounded-lg border border-surface-border bg-surface/60 p-2.5">
+                  <div className="text-[10px] text-slate-500 uppercase font-semibold">Time Elapsed</div>
+                  <div className="mt-1 font-bold text-slate-200">
+                    {metrics.elapsedSeconds.toFixed(1)}s
+                  </div>
+                  <div className="text-[9px] text-slate-500">seconds</div>
+                </div>
+
+                <div className="rounded-lg border border-surface-border bg-surface/60 p-2.5">
+                  <div className="text-[10px] text-slate-500 uppercase font-semibold">Cadence (CPM)</div>
+                  <div className="mt-1 font-bold text-cyan-300">
+                    {Math.round(metrics.cpm)}
+                  </div>
+                  <div className="text-[9px] text-slate-500">chars / min</div>
+                </div>
+              </div>
+
+              {/* Speed Graph (WpmHistoryChart) */}
+              {wpmHistory.length >= 2 && (
+                <div className="mt-6 max-w-3xl mx-auto">
+                  <WpmHistoryChart history={wpmHistory} averageWpm={metrics.netWpm} />
+                </div>
+              )}
+
+              {/* Primary Actions & Copy Summary */}
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <button
                   type="button"
-                  onClick={() => restart(false)}
+                  id="results-next-btn"
+                  onClick={() => restart(true)}
                   className="flex items-center gap-2 rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-400 transition-all shadow-neon-cyan active:scale-95"
                 >
-                  <RotateCcw className="h-4 w-4" />
-                  <span>Retry Same Text</span>
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Next Test</span>
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => restart(true)}
-                  className="flex items-center gap-2 rounded-xl border border-surface-border bg-surface-muted px-5 py-2.5 text-sm font-semibold text-slate-200 hover:text-white transition-all active:scale-95"
+                  id="results-retry-btn"
+                  onClick={() => restart(false)}
+                  className="flex items-center gap-2 rounded-xl border border-surface-border bg-surface px-5 py-2.5 text-sm font-semibold text-slate-200 hover:text-white transition-all active:scale-95"
                 >
-                  <RefreshCw className="h-4 w-4" />
-                  <span>New Passage</span>
+                  <RotateCcw className="h-4 w-4" />
+                  <span>Retry Same</span>
                 </button>
+
+                <button
+                  type="button"
+                  id="results-copy-btn"
+                  onClick={handleCopySummary}
+                  className="flex items-center gap-2 rounded-xl border border-surface-border bg-surface-muted px-4 py-2.5 text-sm font-semibold text-slate-300 hover:text-white transition-all active:scale-95"
+                  title="Copy formatted result summary to clipboard"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4 text-emerald-400" />
+                      <span className="text-emerald-400 font-bold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 text-cyan-400" />
+                      <span>Copy Summary</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Guest Local Storage Notice & Sign in CTA */}
+              <div className="mt-6 max-w-md mx-auto rounded-xl border border-cyan-500/20 bg-cyan-950/20 p-3 text-xs text-cyan-300">
+                <span>Result saved to guest local history. </span>
+                <Link
+                  href="/dashboard"
+                  className="underline font-bold text-white hover:text-cyan-300 transition-colors ml-1"
+                >
+                  Sign in to save permanent records & compete on global leaderboards
+                </Link>
               </div>
             </div>
           ) : (
@@ -312,7 +631,7 @@ export default function PracticePage() {
           )}
         </div>
 
-        {/* Hotkey tip & Guest Notice */}
+        {/* Hotkey tip */}
         <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 px-2">
           <div className="flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5 text-slate-400" />
@@ -329,7 +648,86 @@ export default function PracticePage() {
             to restart
           </div>
         </div>
+
+        {/* Guest Session History Section */}
+        {sessionHistory.length > 0 && (
+          <div className="mt-12 rounded-2xl border border-surface-border bg-surface/40 p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-surface-border pb-4">
+              <div className="flex items-center gap-2">
+                <History className="h-4 w-4 text-cyan-400" />
+                <h3 className="text-sm font-bold text-white">Current Session History</h3>
+                <span className="rounded-full bg-cyan-500/10 px-2 py-0.5 text-[10px] font-mono text-cyan-400 border border-cyan-500/20">
+                  {sessionStats.totalTests} tests
+                </span>
+              </div>
+
+              <div className="flex items-center gap-6 font-mono text-xs">
+                <div>
+                  <span className="text-slate-500">Best: </span>
+                  <span className="font-bold text-cyan-400">{sessionStats.bestWpm} WPM</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Avg: </span>
+                  <span className="font-bold text-white">{sessionStats.avgWpm} WPM</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Acc: </span>
+                  <span className="font-bold text-emerald-400">{sessionStats.avgAccuracy}%</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearHistory}
+                  className="flex items-center gap-1 text-slate-500 hover:text-rose-400 transition-colors"
+                  title="Clear guest session history"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  <span className="text-[11px]">Clear</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Recent tests table */}
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-left font-mono text-xs">
+                <thead>
+                  <tr className="border-b border-surface-border/60 text-[10px] uppercase text-slate-500">
+                    <th className="pb-2 font-semibold">Mode</th>
+                    <th className="pb-2 font-semibold">Net Speed</th>
+                    <th className="pb-2 font-semibold">Raw Speed</th>
+                    <th className="pb-2 font-semibold">Accuracy</th>
+                    <th className="pb-2 font-semibold">Consistency</th>
+                    <th className="pb-2 font-semibold">Errors</th>
+                    <th className="pb-2 font-semibold text-right">Time</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-border/30">
+                  {sessionHistory.slice(0, 5).map((session) => (
+                    <tr key={session.id} className="hover:bg-surface-muted/30 transition-colors">
+                      <td className="py-2 capitalize text-slate-300">{session.mode}</td>
+                      <td className="py-2 font-bold text-cyan-400">{session.netWpm} WPM</td>
+                      <td className="py-2 text-slate-300">{session.rawWpm} WPM</td>
+                      <td className="py-2 text-emerald-400">{session.accuracy}%</td>
+                      <td className="py-2 text-purple-300">{session.consistency}%</td>
+                      <td className="py-2 text-rose-400">{session.errorCount}</td>
+                      <td className="py-2 text-right text-slate-500">
+                        {session.elapsedSeconds.toFixed(1)}s
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Custom Text Modal */}
+      <CustomTextModal
+        isOpen={isCustomModalOpen}
+        onClose={() => setIsCustomModalOpen(false)}
+        onApply={handleCustomTextApply}
+        initialText={config.customText}
+      />
     </div>
   );
 }

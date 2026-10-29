@@ -5,8 +5,8 @@
 | Phase | Feature Description | Status | Verification Summary |
 | :--- | :--- | :--- | :--- |
 | **FEATURE A** | **Foundation and project setup** | **Approved** | Monorepo created, strict TS configured, shared scoring engine built & tested, Next.js 15+ App Router layout and navigation routes implemented, health check API passing. Approved by user. |
-| **FEATURE B** | **Typing engine** (Headless, calculations, timer, caret, events) | **In progress** | Dependencies: Feature A. Implementing headless engine, passage generator, and timer lifecycle. |
-| **FEATURE C** | **Practice page** (Interactive typing UI, modes, difficulty, results) | **Not started** | Dependencies: Feature B. |
+| **FEATURE B** | **Typing engine** (Headless, calculations, timer, caret, events) | **Approved** | Headless engine built, 0-shake stationary words, subpixel hardware-accelerated smooth caret glide, calm 1s ticks, tabular metrics, zen mode. Approved by user. |
+| **FEATURE C** | **Practice page** (Interactive typing UI, modes, difficulty, results) | **In progress** | Adding Quote & Custom modes, Punctuation & Numbers toggles, SVG speed history chart, consistency score, guest local storage history, and sound effects. |
 | **FEATURE D** | **Learning academy** (5 Course levels, progressive unlocking, lessons) | **Not started** | Dependencies: Feature B, C. |
 | **FEATURE E** | **Keyboard layouts & finger guidance** (Visual keyboard, QWERTY map) | **Not started** | Dependencies: Feature D. |
 | **FEATURE F** | **Authentication & database foundation** (Supabase, RLS, sessions) | **Not started** | Dependencies: Feature C, D. |
@@ -22,17 +22,14 @@
 
 ---
 
-## Detailed Task Breakdown for Current Phase: FEATURE A
+## Detailed Task Breakdown for Current Phase: FEATURE C (Practice Page & Analytics)
 
-- [x] Inspect existing project and environment.
-- [x] Configure Node.js LTS, npm workspaces, and Git repository.
-- [x] Establish monorepo structure (`apps/web`, `packages/shared`, `docs/`).
-- [x] Build core domain package `@keysmasher/shared` with deterministic scoring formulas and unit tests.
-- [x] Configure Next.js 15+ App Router with React 19, TypeScript strict mode, and Tailwind CSS.
-- [x] Implement shared design system, responsive navigation Header, and Footer.
-- [x] Implement core routes: Home (`/`), Learn (`/learn`), Practice (`/practice`), Compete (`/compete`), Dashboard (`/dashboard`).
-- [x] Implement `/api/health` health-check verification endpoint.
-- [x] Configure Vitest and automated UI tests.
-- [x] Create `.env.example`, `.gitignore`, and documentation (`architecture.md`, `decisions.md`, `testing.md`, `database.md`, `deployment.md`, `README.md`).
-- [x] Run typecheck, unit tests, lint checks, and production build checks.
+- [ ] Add Punctuation (`@#$`) and Numbers (`123`) toggles to practice configuration bar.
+- [ ] Add Quote mode (famous inspirational & literary quotes) and Custom Text mode (modal to paste user custom text).
+- [ ] Add Consistency score calculation to `@keysmasher/shared` and typing metrics.
+- [ ] Build interactive SVG Speed History Line Chart component (`WpmHistoryChart.tsx`) displaying raw WPM, net WPM, error spikes, and peak speed.
+- [ ] Build Web Audio synthetic mechanical switch sound effects synthesizer (click, clack, thock, mute).
+- [ ] Enhance Results screen with detailed statistics (CPM, Consistency, Error distribution, Copy to Clipboard summary, and Guest save reminder).
+- [ ] Implement guest local session storage history (storing recent test runs in localStorage with average WPM and personal best).
+- [ ] Write Vitest unit tests for new features and verify zero TypeScript/ESLint warnings.
 - [ ] User review and approval.

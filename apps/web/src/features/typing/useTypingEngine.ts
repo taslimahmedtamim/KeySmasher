@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   calculateTypingMetrics,
+  calculateConsistency,
   generatePassage,
   PassageDifficulty,
   TestMode,
@@ -18,6 +19,7 @@ import {
   TypingEngineConfig,
   WpmHistoryPoint,
 } from './types';
+import { playKeystrokeSound } from './utils/soundEffects';
 
 export const DEFAULT_CONFIG: TypingEngineConfig = {
   mode: 'time',
@@ -27,6 +29,7 @@ export const DEFAULT_CONFIG: TypingEngineConfig = {
   allowPaste: false,
   includePunctuation: false,
   includeNumbers: false,
+  soundTheme: 'off',
 };
 
 export interface UseTypingEngineProps {
@@ -69,6 +72,8 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         difficulty: cfg.difficulty,
         includePunctuation: cfg.includePunctuation,
         includeNumbers: cfg.includeNumbers,
+        customText: cfg.customText,
+        quoteLength: cfg.quoteLength,
       });
     },
     []
@@ -164,6 +169,8 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         ? Math.max(0, config.durationSeconds - elapsedSeconds)
         : 0;
 
+    const consistency = calculateConsistency(wpmHistory.map((p) => p.rawWpm));
+
     return {
       ...baseMetrics,
       timeRemaining: Math.ceil(timeRemaining),
@@ -171,8 +178,9 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       totalWordsCount: expectedWords.length,
       missedCharacters: characterCounts.missed,
       extraCharacters: characterCounts.extra,
+      consistency,
     };
-  }, [characterCounts, elapsedSeconds, config, currentWordIndex, expectedWords.length]);
+  }, [characterCounts, elapsedSeconds, config, currentWordIndex, expectedWords.length, wpmHistory]);
 
   // End / Complete test
   const completeTest = useCallback(() => {
@@ -303,6 +311,8 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         e.preventDefault();
         if (currentInput.length === 0) return; // Don't advance on empty space
 
+        playKeystrokeSound(config.soundTheme, false);
+
         const nextWords = [...typedWords];
         nextWords[currentWordIndex] = currentInput;
         setTypedWords(nextWords);
@@ -335,6 +345,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
 
       // Handle Backspace
       if (e.key === 'Backspace') {
+        playKeystrokeSound(config.soundTheme, false);
         if (currentInput.length > 0) {
           // Delete character in current word
           setCurrentInput((prev) => prev.slice(0, -1));
@@ -352,6 +363,10 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       if (e.key.length === 1) {
         e.preventDefault();
         const expectedWord = expectedWords[currentWordIndex] || '';
+        const expectedChar = expectedWord[currentInput.length];
+        const isError = expectedChar !== undefined ? expectedChar !== e.key : true;
+        playKeystrokeSound(config.soundTheme, isError);
+
         // Prevent typing too many extra characters beyond a reasonable limit (+10 chars)
         if (currentInput.length < expectedWord.length + 12) {
           const updatedInput = currentInput + e.key;
