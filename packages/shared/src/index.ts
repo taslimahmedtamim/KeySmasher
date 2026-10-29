@@ -3,3 +3,6 @@ export * from './types';
 export * from './passages/words';
 export * from './passages/quotes';
 export * from './passages/generator';
+export * from './curriculum/types';
+export * from './curriculum/keyboardMap';
+export * from './curriculum/courses';

@@ -6,9 +6,9 @@
 | :--- | :--- | :--- | :--- |
 | **FEATURE A** | **Foundation and project setup** | **Approved** | Monorepo created, strict TS configured, shared scoring engine built & tested, Next.js 15+ App Router layout and navigation routes implemented, health check API passing. Approved by user. |
 | **FEATURE B** | **Typing engine** (Headless, calculations, timer, caret, events) | **Approved** | Headless engine built, 0-shake stationary words, subpixel hardware-accelerated smooth caret glide, calm 1s ticks, tabular metrics, zen mode. Approved by user. |
-| **FEATURE C** | **Practice page** (Interactive typing UI, modes, difficulty, results) | **In progress** | Adding Quote & Custom modes, Punctuation & Numbers toggles, SVG speed history chart, consistency score, guest local storage history, and sound effects. |
-| **FEATURE D** | **Learning academy** (5 Course levels, progressive unlocking, lessons) | **Not started** | Dependencies: Feature B, C. |
-| **FEATURE E** | **Keyboard layouts & finger guidance** (Visual keyboard, QWERTY map) | **Not started** | Dependencies: Feature D. |
+| **FEATURE C** | **Practice page** (Interactive typing UI, modes, difficulty, results) | **Approved** | Quote & Custom modes, Punctuation/Numbers toggles, SVG speed history chart, consistency score, guest local storage history, mechanical sound effects, and final character timer fix. Approved by user. |
+| **FEATURE D** | **Learning academy** (5 Course levels, progressive unlocking, lessons) | **In progress** | Structured curriculum, interactive lesson runner, progressive unlocking, accuracy thresholds, star ratings. |
+| **FEATURE E** | **Keyboard layouts & finger guidance** (Visual keyboard, QWERTY map) | **In progress** | Visual interactive keyboard, color-coded finger mapping, active key highlights. |
 | **FEATURE F** | **Authentication & database foundation** (Supabase, RLS, sessions) | **Not started** | Dependencies: Feature C, D. |
 | **FEATURE G** | **User dashboard & analytics** (Persisted history, trends, empty states) | **Not started** | Dependencies: Feature F. |
 | **FEATURE H** | **Smart typing coach** (Rule-based recommendation engine, weak keys) | **Not started** | Dependencies: Feature G. |
@@ -22,14 +22,14 @@
 
 ---
 
-## Detailed Task Breakdown for Current Phase: FEATURE C (Practice Page & Analytics)
+## Detailed Task Breakdown for Current Phase: FEATURE D & E (Learning Academy & Visual Keyboard)
 
-- [ ] Add Punctuation (`@#$`) and Numbers (`123`) toggles to practice configuration bar.
-- [ ] Add Quote mode (famous inspirational & literary quotes) and Custom Text mode (modal to paste user custom text).
-- [ ] Add Consistency score calculation to `@keysmasher/shared` and typing metrics.
-- [ ] Build interactive SVG Speed History Line Chart component (`WpmHistoryChart.tsx`) displaying raw WPM, net WPM, error spikes, and peak speed.
-- [ ] Build Web Audio synthetic mechanical switch sound effects synthesizer (click, clack, thock, mute).
-- [ ] Enhance Results screen with detailed statistics (CPM, Consistency, Error distribution, Copy to Clipboard summary, and Guest save reminder).
-- [ ] Implement guest local session storage history (storing recent test runs in localStorage with average WPM and personal best).
-- [ ] Write Vitest unit tests for new features and verify zero TypeScript/ESLint warnings.
+- [x] Create structured curriculum data in `@keysmasher/shared` (Levels 1 to 5, lesson IDs, targets, drills, descriptions, finger hints).
+- [x] Build QWERTY finger-mapping data and color-coded finger zones (Pinky, Ring, Middle, Index, Thumb).
+- [x] Build `VisualKeyboard.tsx` component with real-time keypress illumination and finger position indicator.
+- [x] Build interactive Lesson Runner (`/learn/[levelId]/[lessonId]`) with step-by-step progress, target accuracy gate (e.g. 95%), and star scoring.
+- [x] Implement progressive lesson unlocking and guest progress persistence (localStorage).
+- [x] Update `/learn` catalog page with progress badges, unlocked/locked status, star tallies, and clean navigation.
+- [x] Write Vitest unit tests for lesson completion, star calculations, and keyboard mapping (45 total tests passing).
+- [x] Verify zero TypeScript errors and zero ESLint warnings across monorepo.
 - [ ] User review and approval.
