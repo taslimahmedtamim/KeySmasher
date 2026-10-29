@@ -58,6 +58,9 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const statusRef = useRef<EngineStatus>('idle');
   statusRef.current = status;
+  const keyStatsRef = useRef<
+    Record<string, { attempts: number; errors: number; confusion: Record<string, number> }>
+  >({});
 
   // Generate or load initial passage
   const initializePassage = useCallback(
@@ -92,6 +95,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
     setWpmHistory([]);
     startTimeRef.current = null;
     lastRecordedSecondRef.current = 0;
+    keyStatsRef.current = {};
   }, [config, initializePassage]);
 
   // Clean up timer on unmount
@@ -179,6 +183,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       missedCharacters: characterCounts.missed,
       extraCharacters: characterCounts.extra,
       consistency,
+      keyStats: { ...keyStatsRef.current },
     };
   }, [characterCounts, elapsedSeconds, config, currentWordIndex, expectedWords.length, wpmHistory]);
 
@@ -274,6 +279,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       setStatus('idle');
       setElapsedSeconds(0);
       setWpmHistory([]);
+      keyStatsRef.current = {};
       inputRef.current?.focus();
     },
     [config, initializePassage, passage]
@@ -318,6 +324,13 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         if (currentInput.length === 0) return; // Don't advance on empty space
 
         playKeystrokeSound(config.soundTheme, false);
+
+        // Record space attempt
+        const spaceChar = ' ';
+        if (!keyStatsRef.current[spaceChar]) {
+          keyStatsRef.current[spaceChar] = { attempts: 0, errors: 0, confusion: {} };
+        }
+        keyStatsRef.current[spaceChar].attempts++;
 
         const nextWords = [...typedWords];
         nextWords[currentWordIndex] = currentInput;
@@ -390,6 +403,21 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         const expectedChar = expectedWord[currentInput.length];
         const isError = expectedChar !== undefined ? expectedChar !== e.key : true;
         playKeystrokeSound(config.soundTheme, isError);
+
+        // Record keystroke telemetry
+        if (expectedChar) {
+          const normKey = expectedChar.toLowerCase();
+          if (!keyStatsRef.current[normKey]) {
+            keyStatsRef.current[normKey] = { attempts: 0, errors: 0, confusion: {} };
+          }
+          keyStatsRef.current[normKey].attempts++;
+          if (isError) {
+            keyStatsRef.current[normKey].errors++;
+            const typedKey = e.key.toLowerCase();
+            keyStatsRef.current[normKey].confusion[typedKey] =
+              (keyStatsRef.current[normKey].confusion[typedKey] || 0) + 1;
+          }
+        }
 
         // Prevent typing too many extra characters beyond a reasonable limit (+10 chars)
         if (currentInput.length < expectedWord.length + 12) {

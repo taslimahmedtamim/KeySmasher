@@ -1,4 +1,5 @@
 import { SavedTestSession } from '../typing/utils/historyStorage';
+import { CoachAnalysisResult } from '@keysmasher/shared';
 
 export interface PersonalBestRecord {
   preset: string; // e.g., 'time-15', 'time-30', 'time-60', 'time-120', 'words-10', 'words-25', 'words-50', 'words-100', 'quote'
@@ -57,5 +58,6 @@ export interface UserAnalyticsData {
   progression: ProgressionPoint[];
   sessions: SavedTestSession[];
   academy: AcademyMasterySummary;
+  coach: CoachAnalysisResult;
   isLoading: boolean;
 }

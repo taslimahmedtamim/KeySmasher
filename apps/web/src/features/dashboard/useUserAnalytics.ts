@@ -5,9 +5,10 @@ import { useAuth } from '../auth/AuthContext';
 import {
   SavedTestSession,
   getStoredSessions,
+  getCumulativeKeyStats,
 } from '../typing/utils/historyStorage';
 import { getAllLessonProgress } from '../academy/utils/academyStorage';
-import { COURSES } from '@keysmasher/shared';
+import { COURSES, analyzeTypingDiagnostics, CoachAnalysisResult } from '@keysmasher/shared';
 import {
   UserAnalyticsData,
   PersonalBestRecord,
@@ -340,12 +341,24 @@ export function useUserAnalytics(): UserAnalyticsData & {
     document.body.removeChild(a);
   }, [user, sessions]);
 
+  // Coach Telemetry and Diagnostics
+  const coach: CoachAnalysisResult = useMemo(() => {
+    const cumulativeKeyStats = getCumulativeKeyStats();
+    return analyzeTypingDiagnostics(cumulativeKeyStats, {
+      avgWpm: summary.avgWpm,
+      avgAccuracy: summary.avgAccuracy,
+      avgConsistency: summary.avgConsistency,
+      totalTests: summary.totalTests,
+    });
+  }, [summary]);
+
   return {
     summary,
     personalBests,
     progression,
     sessions,
     academy,
+    coach,
     isLoading: false,
     exportHistoryJson,
     exportHistoryCsv,

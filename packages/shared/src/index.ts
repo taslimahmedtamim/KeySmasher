@@ -6,3 +6,4 @@ export * from './passages/generator';
 export * from './curriculum/types';
 export * from './curriculum/keyboardMap';
 export * from './curriculum/courses';
+export * from './coach';

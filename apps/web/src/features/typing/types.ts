@@ -57,4 +57,5 @@ export interface ExtendedTypingMetrics extends TypingMetricsResult {
   missedCharacters: number;
   extraCharacters: number;
   consistency: number;
+  keyStats?: Record<string, { attempts: number; errors: number; confusion: Record<string, number> }>;
 }

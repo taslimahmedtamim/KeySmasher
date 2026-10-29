@@ -12,20 +12,13 @@ export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isGuest, openAuthModal, signOut } = useAuth();
 
-  // Primary navigation for public / guest users
-  const publicNavItems = [
+  // Primary navigation items (accessible with or without signin)
+  const navItems = [
     { name: 'Learn', href: '/learn', icon: BookOpen },
     { name: 'Practice', href: '/practice', icon: Zap },
     { name: 'Compete', href: '/compete', icon: Swords },
-  ];
-
-  // Additional items available only after authentication
-  const authNavItems = [
-    ...publicNavItems,
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   ];
-
-  const currentNavItems = user ? authNavItems : publicNavItems;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-surface-border bg-background/80 backdrop-blur-md">
@@ -36,14 +29,14 @@ export const Header: React.FC = () => {
           className="group flex items-center gap-3 transition-opacity hover:opacity-90"
           id="nav-brand-logo"
         >
-          <div className="relative h-10 w-10 overflow-hidden rounded-lg border border-cyan-500/30 bg-surface shadow-neon-cyan transition-transform group-hover:scale-105">
+          <div className="relative h-11 w-11 sm:h-12 sm:w-12 transition-transform group-hover:scale-105 flex items-center justify-center shrink-0">
             <Image
               src="/logo.png"
               alt="KeySmasher Logo"
-              width={40}
-              height={40}
+              width={48}
+              height={48}
               priority
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain filter drop-shadow-[0_0_12px_rgba(34,211,238,0.5)]"
             />
           </div>
           <div className="flex flex-col">
@@ -56,9 +49,9 @@ export const Header: React.FC = () => {
           </div>
         </Link>
 
-        {/* Desktop Navigation (Dashboard only visible when authenticated) */}
+        {/* Desktop Navigation */}
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main Navigation">
-          {currentNavItems.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (
@@ -139,7 +132,7 @@ export const Header: React.FC = () => {
       {mobileMenuOpen && (
         <div className="border-b border-surface-border bg-surface px-4 py-3 md:hidden">
           <div className="flex flex-col space-y-1">
-            {currentNavItems.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
               return (

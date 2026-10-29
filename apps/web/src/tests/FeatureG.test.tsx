@@ -21,37 +21,22 @@ describe('Feature G: User Dashboard & Analytics', () => {
   });
 
   describe('Guest Experience', () => {
-    it('renders the Cyberpunk Account Unlock Gateway for unauthenticated guests', () => {
+    it('renders the Dashboard directly without requiring sign-in for guests', () => {
       render(
         <AuthProvider>
           <DashboardPage />
         </AuthProvider>
       );
 
-      expect(screen.getByText('Unlock Your Typist Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('1-Click Demo Account Login')).toBeInTheDocument();
-      expect(screen.getByText('Sign In / Create Account')).toBeInTheDocument();
-      expect(screen.getByText('Progression Curves')).toBeInTheDocument();
-      expect(screen.getByText('Hall of Records')).toBeInTheDocument();
-      expect(screen.getByText('Academy Mastery')).toBeInTheDocument();
-    });
-
-    it('allows 1-click Demo Account login directly from dashboard gateway', async () => {
-      render(
-        <AuthProvider>
-          <DashboardPage />
-        </AuthProvider>
-      );
-
-      const demoBtn = screen.getByText('1-Click Demo Account Login');
-      await act(async () => {
-        fireEvent.click(demoBtn);
-      });
-
-      // Now dashboard should reveal authenticated interface for SpeedDemon
-      expect(screen.getByText('Speed Demon')).toBeInTheDocument();
-      expect(screen.getByText('@SpeedDemon')).toBeInTheDocument();
-      expect(screen.getByText('Demo Account')).toBeInTheDocument();
+      // Directly renders dashboard with Guest Typist profile
+      expect(screen.getByText('KeySmasher Typist')).toBeInTheDocument();
+      expect(screen.getByText('Guest Typist')).toBeInTheDocument();
+      expect(screen.getByText('Peak Speed')).toBeInTheDocument();
+      expect(screen.getByText('Accuracy')).toBeInTheDocument();
+      expect(screen.getByText('No Speed Tests Recorded Yet')).toBeInTheDocument();
+      expect(screen.getByText('Smart Typist Coach & Weak-Key Diagnostics')).toBeInTheDocument();
+      expect(screen.getByText('Touch Typing Academy Mastery')).toBeInTheDocument();
+      expect(screen.getByText('Verified Speed Test Records')).toBeInTheDocument();
     });
   });
 

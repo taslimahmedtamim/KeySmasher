@@ -10,8 +10,8 @@
 | **FEATURE D** | **Learning academy** (5 Course levels, progressive unlocking, lessons) | **Approved** | Structured 5-level curriculum, 24 lessons, interactive lesson runner, progressive unlocking, accuracy gates, star ratings. Approved by user. |
 | **FEATURE E** | **Keyboard layouts & finger guidance** (Visual keyboard, QWERTY map) | **Approved** | UnifiedGuidanceConsole (Left Hand | Keyboard | Right Hand on one screen), anatomical fingers, tactile bumps, reach vectors, movement coach. Approved by user. |
 | **FEATURE F** | **Authentication & database foundation** (Supabase, RLS, sessions) | **Approved** | PostgreSQL schema migration, RLS policies, AuthContext, AuthModal with responsive sizing, 1-click Demo Account, guest-to-account sync. Approved by user. |
-| **FEATURE G** | **User dashboard & analytics** (Persisted history, trends, empty states) | **Implemented** | Personal analytics hub with profile banner, 5 headline KPIs, interactive SVG progression chart with hover popovers, personal bests matrix, academy mastery card, and session history table with CSV/JSON export. |
-| **FEATURE H** | **Smart typing coach** (Rule-based recommendation engine, weak keys) | **Not started** | Dependencies: Feature G. |
+| **FEATURE G** | **User dashboard & analytics** (Persisted history, trends, empty states) | **Approved** | Personal analytics hub with 2-tier profile banner, 5 headline KPIs, interactive SVG progression chart, academy mastery card, Star-highlighted verified records table, and high-res Certificate download. Approved by user. |
+| **FEATURE H** | **Smart typing coach** (Rule-based recommendation engine, weak keys) | **Ready for Review** | Weak-key diagnostics, confusion matrix, finger load balance, rule-based coaching advice, visual keyboard heatmap, 1-click targeted drill generator. 68 unit tests passing (15 shared, 53 web), 0 TS errors, 0 ESLint warnings. |
 | **FEATURE I** | **Real-time multiplayer infrastructure** (Node.js & Socket.IO service) | **Not started** | Dependencies: Feature A, F. |
 | **FEATURE J** | **Multiplayer typing races** (Synchronized lobbies, countdowns, race) | **Not started** | Dependencies: Feature B, I. |
 | **FEATURE K** | **Competition history & leaderboards** (Rankings, race records) | **Not started** | Dependencies: Feature J. |
@@ -22,20 +22,25 @@
 
 ---
 
-## Detailed Task Breakdown for FEATURE G (User Dashboard & Analytics)
+## Detailed Task Breakdown for FEATURE H (Smart Typing Coach & Weak-Key Diagnostics)
 
-- [x] Create dashboard type definitions `apps/web/src/features/dashboard/types.ts` (PersonalBestRecord, AnalyticsSummary, ProgressionPoint, AcademyMasterySummary, UserAnalyticsData).
-- [x] Build data loader hook `useUserAnalytics.ts` unifying Supabase database records, local session storage, academy storage, and strictly real user data.
-- [x] Implement `DashboardProfileBanner.tsx` with user identity avatar, status pills, quick stats strip, and golden official Certificate Download action.
-- [x] Remove CSV/JSON export clutter and replace with high-resolution typing certificate generator modal `TypingCertificateModal.tsx` (1600x1000 HD PNG download & print).
-- [x] Integrate Certificate download in both Dashboard (All-time personal best) and Practice Page (immediate post-test results).
-- [x] Implement `KpiMetricsGrid.tsx` with 5 neon headline cards: Peak WPM, Lifetime Average, Accuracy Ratio, Rhythm Consistency, and Active Daily Streak with clean integer rounding.
-- [x] Implement `ProgressionChart.tsx` featuring an interactive SVG curve with neon cyan glow, filter tabs (All, Time, Words, Quotes), and hover data popovers.
-- [x] Streamline dashboard by removing redundant 9-box personal bests grid and integrating prominent Star ⭐ / Peak badges directly into the Verified Speed Test Records table.
-- [x] Implement `AcademyMasteryCard.tsx` showcasing 5-level curriculum completion bars, star counts, and direct lesson navigation.
-- [x] Implement `SessionHistoryTable.tsx` with date formatting, mode badges, clean pagination, and glowing Star highlights for all-time peak and preset records.
-- [x] Build authenticated and guest states in `apps/web/src/app/dashboard/page.tsx` with Cyberpunk unlock gateway and 1-click Demo login.
-- [x] Write comprehensive unit tests in `apps/web/src/tests/FeatureG.test.tsx` (59 total passing tests across monorepo).
+- [x] Create domain types in `@keysmasher/shared`: `KeyAccuracyStat`, `WeakKeyDiagnostic`, `FingerBalanceStat`, `CoachRecommendation`, `CoachAnalysisResult`.
+- [x] Implement pure diagnostic engine in `@keysmasher/shared` (`diagnosticEngine.ts`):
+  - Per-character accuracy & error frequency.
+  - Finger error load (Left Pinky/Ring/Middle/Index vs Right Index/Middle/Ring/Pinky).
+  - Top 5 weakest keys with confusion mapping (e.g. typed `r` instead of `t`).
+  - Rule-based coaching recommendations (speed plateau, accuracy bottleneck, rhythm cadence, specific Academy lesson deep links).
+  - Targeted drill generator synthesizing practice sentences tailored to target weak keys (`drillGenerator.ts`).
+- [x] Build `apps/web/src/features/coach/components/KeyboardHeatmap.tsx` rendering an interactive QWERTY heatmap with accuracy color-coding (Mastered >97%, Developing 90-96%, Weak <90%), with interactive key drawer revealing finger assignment, motion instruction, and mis-presses.
+- [x] Build `apps/web/src/features/coach/components/SmartCoachCard.tsx` on the Dashboard displaying:
+  - Accuracy Health Score & Hand Balance ratio.
+  - Top 3-5 Weak Keys with miss frequency and finger assignments.
+  - Actionable Coach Insight pills.
+  - 1-Click "Start Targeted Weak-Key Drill" button that loads custom practice text.
+- [x] Build `apps/web/src/features/coach/components/PostTestCoachTip.tsx` for immediate coaching feedback on the Practice Results screen.
+- [x] Integrate Smart Coach into Dashboard ([page.tsx](file:///run/media/tamim/New%20Volume/Projects/KeySmasher/apps/web/src/app/dashboard/page.tsx)) and Practice results ([practice/page.tsx](file:///run/media/tamim/New%20Volume/Projects/KeySmasher/apps/web/src/app/practice/page.tsx)).
+- [x] Write unit tests for coach engine calculations and UI components in `apps/web/src/tests/FeatureH.test.tsx`.
 - [x] Verify strict TypeScript typecheck and ESLint with 0 errors and 0 warnings.
 - [ ] User review and approval.
+
 

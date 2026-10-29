@@ -52,6 +52,78 @@ export interface SavedTestSession {
   errorCount: number;
   targetDuration?: number;
   targetWords?: number;
+  keyStats?: Record<string, { attempts: number; errors: number; confusion?: Record<string, number> }>;
+}
+
+const CUMULATIVE_KEY_STATS_KEY = 'keysmasher_cumulative_key_stats';
+
+export function getCumulativeKeyStats(): Record<
+  string,
+  { attempts: number; errors: number; confusion: Record<string, number> }
+> {
+  const result: Record<
+    string,
+    { attempts: number; errors: number; confusion: Record<string, number> }
+  > = {};
+
+  try {
+    const raw = safeGetItem(CUMULATIVE_KEY_STATS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        Object.assign(result, parsed);
+      }
+    }
+  } catch {
+    // Ignore
+  }
+
+  // Also merge with any per-session stats from stored sessions if not already in cumulative store
+  if (Object.keys(result).length === 0) {
+    const sessions = getStoredSessions();
+    for (const s of sessions) {
+      if (s.keyStats) {
+        for (const [k, v] of Object.entries(s.keyStats)) {
+          if (!result[k]) {
+            result[k] = { attempts: 0, errors: 0, confusion: {} };
+          }
+          result[k].attempts += v.attempts || 0;
+          result[k].errors += v.errors || 0;
+          if (v.confusion) {
+            for (const [confusedChar, count] of Object.entries(v.confusion)) {
+              result[k].confusion[confusedChar] = (result[k].confusion[confusedChar] || 0) + count;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+export function mergeSessionKeyStats(
+  newStats: Record<string, { attempts: number; errors: number; confusion?: Record<string, number> }>
+): void {
+  try {
+    const current = getCumulativeKeyStats();
+    for (const [char, stat] of Object.entries(newStats)) {
+      if (!current[char]) {
+        current[char] = { attempts: 0, errors: 0, confusion: {} };
+      }
+      current[char].attempts += stat.attempts || 0;
+      current[char].errors += stat.errors || 0;
+      if (stat.confusion) {
+        for (const [confusedChar, count] of Object.entries(stat.confusion)) {
+          current[char].confusion[confusedChar] =
+            (current[char].confusion[confusedChar] || 0) + count;
+        }
+      }
+    }
+    safeSetItem(CUMULATIVE_KEY_STATS_KEY, JSON.stringify(current));
+  } catch {
+    // Ignore
+  }
 }
 
 export interface SessionStats {
@@ -87,6 +159,10 @@ export function saveSessionResult(
     // Keep up to 25 recent tests in guest storage
     const updated = [item, ...existing].slice(0, 25);
     safeSetItem(STORAGE_KEY, JSON.stringify(updated));
+
+    if (result.keyStats) {
+      mergeSessionKeyStats(result.keyStats);
+    }
   } catch {
     // Ignore
   }

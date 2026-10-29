@@ -32,8 +32,9 @@ pnpm-debug.log*
 *.pem
 Thumbs.db
 
-# IDE
+# IDE & Build Caches
 .vscode/
 .idea/
 *.swp
 *.swo
+*.tsbuildinfo

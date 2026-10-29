@@ -48,6 +48,7 @@ import {
 } from '@/features/typing/utils/historyStorage';
 import { SoundTheme } from '@/features/typing/types';
 import { playKeystrokeSound } from '@/features/typing/utils/soundEffects';
+import { PostTestCoachTip } from '@/features/coach';
 
 export default function PracticePage() {
   const { user } = useAuth();
@@ -70,10 +71,28 @@ export default function PracticePage() {
     actions: { restart, handleKeyDown, handleInputChange, handlePaste, setConfig },
   } = useTypingEngine();
 
-  // Load guest session history on mount
+  // Load guest session history on mount and handle drill deep-linking
   useEffect(() => {
     setSessionHistory(getStoredSessions());
-  }, []);
+    try {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('drill') === 'weak-keys') {
+          const stored = window.sessionStorage.getItem('keysmasher_drill_passage');
+          if (stored) {
+            setConfig((prev) => ({
+              ...prev,
+              mode: 'custom',
+              customText: stored,
+              initialPassage: stored,
+            }));
+          }
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }, [setConfig]);
 
   // Save completed session to local history
   useEffect(() => {
@@ -93,6 +112,7 @@ export default function PracticePage() {
           errorCount: metrics.incorrectCharacters,
           targetDuration: config.mode === 'time' ? config.durationSeconds : undefined,
           targetWords: config.mode === 'words' ? config.targetWordCount : undefined,
+          keyStats: metrics.keyStats,
         });
         setSessionHistory((prev) => [saved, ...prev].slice(0, 25));
       }
@@ -121,6 +141,16 @@ export default function PracticePage() {
       customText,
       initialPassage: customText,
     }));
+  };
+
+  const handleApplyCoachDrill = (drillPassage: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      mode: 'custom',
+      customText: drillPassage,
+      initialPassage: drillPassage,
+    }));
+    restart(false);
   };
 
   const handleDurationChange = (d: TimeDurationOption) => {
@@ -566,6 +596,13 @@ export default function PracticePage() {
                   <div className="text-[9px] text-slate-500">chars / min</div>
                 </div>
               </div>
+
+              {/* Immediate Post-Test Smart Coach Feedback */}
+              <PostTestCoachTip
+                metrics={metrics}
+                onApplyDrill={handleApplyCoachDrill}
+                className="mt-6 max-w-3xl mx-auto text-left"
+              />
 
               {/* Speed Graph (WpmHistoryChart) */}
               {wpmHistory.length >= 2 && (

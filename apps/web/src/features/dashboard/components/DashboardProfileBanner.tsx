@@ -71,9 +71,13 @@ export const DashboardProfileBanner: React.FC<DashboardProfileBannerProps> = ({
                   <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-purple-300">
                     Demo Account
                   </span>
-                ) : (
+                ) : user ? (
                   <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-cyan-300">
                     Verified Typist
+                  </span>
+                ) : (
+                  <span className="rounded-full border border-slate-500/30 bg-slate-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-slate-300">
+                    Guest Typist
                   </span>
                 )}
               </div>
