@@ -9,6 +9,7 @@ import {
 } from '@keysmasher/shared';
 import { VisualKeyboard } from '@/features/academy/components/VisualKeyboard';
 import { HandsVisualizer } from '@/features/academy/components/HandsVisualizer';
+import { UnifiedGuidanceConsole } from '@/features/academy/components/UnifiedGuidanceConsole';
 import {
   saveLessonProgress,
   getLessonProgress,
@@ -108,6 +109,18 @@ describe('Feature D & E: Learning Academy & Keyboard Finger Guidance', () => {
       expect(screen.getByText('Right Hand')).toBeInTheDocument();
       expect(screen.getByText(/Movement & Placement Instruction:/i)).toBeInTheDocument();
       expect(screen.getByText(/reaches 1 key right from \[F\]/i)).toBeInTheDocument();
+    });
+
+    it('renders UnifiedGuidanceConsole displaying Left Hand, Right Hand, and Keyboard on one screen', () => {
+      render(<UnifiedGuidanceConsole activeChar="d" />);
+
+      // Left hand & right hand labels
+      expect(screen.getAllByText('Left Hand').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Right Hand').length).toBeGreaterThanOrEqual(1);
+
+      // Movement instruction
+      expect(screen.getByText(/Left middle finger rests directly on its home key/i)).toBeInTheDocument();
+      expect(screen.getByText('Left Middle')).toBeInTheDocument();
     });
   });
 
