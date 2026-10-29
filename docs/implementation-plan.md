@@ -25,14 +25,17 @@
 ## Detailed Task Breakdown for FEATURE G (User Dashboard & Analytics)
 
 - [x] Create dashboard type definitions `apps/web/src/features/dashboard/types.ts` (PersonalBestRecord, AnalyticsSummary, ProgressionPoint, AcademyMasterySummary, UserAnalyticsData).
-- [x] Build data loader hook `useUserAnalytics.ts` unifying Supabase database records, local session storage, academy storage, and realistic pre-seeded demo records for 1-click Demo Account (`SpeedDemon`).
-- [x] Implement `DashboardProfileBanner.tsx` with user identity avatar, status pills, quick stats strip, and CSV/JSON export controls.
-- [x] Implement `KpiMetricsGrid.tsx` with 5 neon headline cards: Peak WPM, Lifetime Average, Accuracy Ratio, Rhythm Consistency, and Active Daily Streak.
+- [x] Build data loader hook `useUserAnalytics.ts` unifying Supabase database records, local session storage, academy storage, and strictly real user data.
+- [x] Implement `DashboardProfileBanner.tsx` with user identity avatar, status pills, quick stats strip, and golden official Certificate Download action.
+- [x] Remove CSV/JSON export clutter and replace with high-resolution typing certificate generator modal `TypingCertificateModal.tsx` (1600x1000 HD PNG download & print).
+- [x] Integrate Certificate download in both Dashboard (All-time personal best) and Practice Page (immediate post-test results).
+- [x] Implement `KpiMetricsGrid.tsx` with 5 neon headline cards: Peak WPM, Lifetime Average, Accuracy Ratio, Rhythm Consistency, and Active Daily Streak with clean integer rounding.
 - [x] Implement `ProgressionChart.tsx` featuring an interactive SVG curve with neon cyan glow, filter tabs (All, Time, Words, Quotes), and hover data popovers.
 - [x] Implement `PersonalBestsGrid.tsx` categorizing verified speed records across 15s, 30s, 60s, 120s time modes and 10, 25, 50, 100 word presets.
 - [x] Implement `AcademyMasteryCard.tsx` showcasing 5-level curriculum completion bars, star counts, and direct lesson navigation.
-- [x] Implement `SessionHistoryTable.tsx` with date formatting, mode badges, pagination, and download shortcuts.
+- [x] Implement `SessionHistoryTable.tsx` with date formatting, mode badges, and clean pagination.
 - [x] Build authenticated and guest states in `apps/web/src/app/dashboard/page.tsx` with Cyberpunk unlock gateway and 1-click Demo login.
 - [x] Write comprehensive unit tests in `apps/web/src/tests/FeatureG.test.tsx` (59 total passing tests across monorepo).
 - [x] Verify strict TypeScript typecheck and ESLint with 0 errors and 0 warnings.
 - [ ] User review and approval.
+
