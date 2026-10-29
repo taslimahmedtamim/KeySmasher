@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Zap, Swords, LayoutDashboard, Menu, X, Keyboard, User, LogIn, LogOut } from 'lucide-react';
+import { BookOpen, Zap, Swords, LayoutDashboard, Menu, X, User, LogIn, LogOut } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const pathname = usePathname();
@@ -85,15 +85,6 @@ export const Header: React.FC = () => {
 
         {/* Right CTA / Auth controls */}
         <div className="hidden items-center gap-3 md:flex">
-          <Link
-            href="/practice"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-surface px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-slate-600 hover:text-white"
-            title="Quick Practice"
-          >
-            <Keyboard className="h-3.5 w-3.5 text-cyan-400" />
-            <span>Quick Test</span>
-          </Link>
-
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
               <Link
