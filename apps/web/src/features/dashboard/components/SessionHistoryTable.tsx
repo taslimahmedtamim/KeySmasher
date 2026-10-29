@@ -1,32 +1,16 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import {
-  History,
-  Calendar,
-  Clock,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  FileText,
-  FileCode,
-} from 'lucide-react';
+import { History, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SavedTestSession } from '../../typing/utils/historyStorage';
 
 interface SessionHistoryTableProps {
   sessions: SavedTestSession[];
-  onExportCsv: () => void;
-  onExportJson: () => void;
 }
 
 const ITEMS_PER_PAGE = 8;
 
-export const SessionHistoryTable: React.FC<SessionHistoryTableProps> = ({
-  sessions,
-  onExportCsv,
-  onExportJson,
-}) => {
+export const SessionHistoryTable: React.FC<SessionHistoryTableProps> = ({ sessions }) => {
   const [filterMode, setFilterMode] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
 
@@ -100,26 +84,6 @@ export const SessionHistoryTable: React.FC<SessionHistoryTableProps> = ({
                 {tab.label}
               </button>
             ))}
-          </div>
-
-          {/* Quick export icons */}
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={onExportCsv}
-              className="rounded-lg border border-surface-border bg-surface-muted p-1.5 text-slate-400 hover:text-white hover:border-slate-600 transition-colors"
-              title="Download CSV"
-            >
-              <FileText className="h-3.5 w-3.5 text-emerald-400" />
-            </button>
-            <button
-              type="button"
-              onClick={onExportJson}
-              className="rounded-lg border border-surface-border bg-surface-muted p-1.5 text-slate-400 hover:text-white hover:border-slate-600 transition-colors"
-              title="Download JSON"
-            >
-              <FileCode className="h-3.5 w-3.5 text-cyan-400" />
-            </button>
           </div>
         </div>
       </div>

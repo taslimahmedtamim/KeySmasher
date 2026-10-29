@@ -121,7 +121,7 @@ export function useUserAnalytics(): UserAnalyticsData & {
     const totalWords = Math.round(
       sessions.reduce((acc, s) => acc + (s.netWpm * (s.elapsedSeconds || 30)) / 60, 0)
     );
-    const peakWpm = Math.max(...sessions.map((s) => s.netWpm));
+    const peakWpm = Math.round(Math.max(...sessions.map((s) => s.netWpm)));
     const avgWpm = Math.round(sessions.reduce((acc, s) => acc + s.netWpm, 0) / totalTests);
     const avgAccuracy = Math.round(
       sessions.reduce((acc, s) => acc + s.accuracy, 0) / totalTests
@@ -182,10 +182,10 @@ export function useUserAnalytics(): UserAnalyticsData & {
           preset: def.preset,
           label: def.label,
           category: def.category,
-          wpm: best.netWpm,
-          rawWpm: best.rawWpm,
-          accuracy: best.accuracy,
-          consistency: best.consistency || 90,
+          wpm: Math.round(best.netWpm),
+          rawWpm: Math.round(best.rawWpm),
+          accuracy: Math.round(best.accuracy),
+          consistency: Math.round(best.consistency || 90),
           timestamp: best.timestamp,
         };
       }
@@ -212,10 +212,10 @@ export function useUserAnalytics(): UserAnalyticsData & {
       id: s.id,
       testIndex: idx + 1,
       timestamp: s.timestamp,
-      netWpm: s.netWpm,
-      rawWpm: s.rawWpm,
-      accuracy: s.accuracy,
-      consistency: s.consistency || 90,
+      netWpm: Math.round(s.netWpm),
+      rawWpm: Math.round(s.rawWpm),
+      accuracy: Math.round(s.accuracy),
+      consistency: Math.round(s.consistency || 90),
       mode: s.mode,
       preset:
         s.mode === 'time'

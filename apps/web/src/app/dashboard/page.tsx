@@ -33,9 +33,6 @@ export default function DashboardPage() {
     progression,
     sessions,
     academy,
-    exportHistoryJson,
-    exportHistoryCsv,
-    refreshAnalytics,
   } = useUserAnalytics();
 
   // If user is not authenticated, render the Cyberpunk Account Unlock Gateway
@@ -146,12 +143,7 @@ export default function DashboardPage() {
     <div className="py-6 sm:py-8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
         {/* 1. Profile & Quick Actions Banner */}
-        <DashboardProfileBanner
-          summary={summary}
-          academy={academy}
-          onExportJson={exportHistoryJson}
-          onExportCsv={exportHistoryCsv}
-        />
+        <DashboardProfileBanner summary={summary} academy={academy} />
 
         {/* 2. Top Headline KPIs (Peak WPM, Avg WPM, Accuracy, Consistency, Streak) */}
         <KpiMetricsGrid summary={summary} />
@@ -166,11 +158,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 5. Detailed Session History Audit Table */}
-        <SessionHistoryTable
-          sessions={sessions}
-          onExportCsv={exportHistoryCsv}
-          onExportJson={exportHistoryJson}
-        />
+        <SessionHistoryTable sessions={sessions} />
       </div>
     </div>
   );

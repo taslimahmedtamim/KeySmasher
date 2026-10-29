@@ -203,6 +203,25 @@ describe('Feature G: User Dashboard & Analytics', () => {
       expect(screen.getByText('Verified Speed Test Records')).toBeInTheDocument();
       expect(screen.getByText('Net Speed')).toBeInTheDocument();
       expect(screen.getByText('Raw Speed')).toBeInTheDocument();
+
+      // 6. Certificate Download Action
+      const certBtn = screen.getByRole('button', { name: /Download Certificate/i });
+      expect(certBtn).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(certBtn);
+      });
+
+      // Verify certificate modal opens
+      expect(screen.getByText('Official Typing Proficiency Certificate')).toBeInTheDocument();
+      expect(screen.getByText('Download Certificate (PNG)')).toBeInTheDocument();
+      expect(screen.getByText('Print')).toBeInTheDocument();
+
+      // Close modal
+      const closeBtn = screen.getByRole('button', { name: /Close dialog/i });
+      await act(async () => {
+        fireEvent.click(closeBtn);
+      });
+      expect(screen.queryByText('Official Typing Proficiency Certificate')).not.toBeInTheDocument();
     });
   });
 });

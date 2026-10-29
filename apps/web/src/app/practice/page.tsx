@@ -25,6 +25,7 @@ import {
   TrendingUp,
   History,
   Trash2,
+  Award,
 } from 'lucide-react';
 import {
   PassageDifficulty,
@@ -32,10 +33,12 @@ import {
   TimeDurationOption,
   WordCountOption,
 } from '@keysmasher/shared';
+import { useAuth } from '@/features/auth/AuthContext';
 import { useTypingEngine } from '@/features/typing/useTypingEngine';
 import { TypingArea } from '@/features/typing/components/TypingArea';
 import { WpmHistoryChart } from '@/features/typing/components/WpmHistoryChart';
 import { CustomTextModal } from '@/features/typing/components/CustomTextModal';
+import { TypingCertificateModal } from '@/components/certificate/TypingCertificateModal';
 import {
   getStoredSessions,
   saveSessionResult,
@@ -47,8 +50,10 @@ import { SoundTheme } from '@/features/typing/types';
 import { playKeystrokeSound } from '@/features/typing/utils/soundEffects';
 
 export default function PracticePage() {
+  const { user } = useAuth();
   const [zenMode, setZenMode] = useState(false);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [isCertificateOpen, setIsCertificateOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sessionHistory, setSessionHistory] = useState<SavedTestSession[]>([]);
   const savedTestRef = useRef<string | null>(null);
@@ -610,6 +615,17 @@ export default function PracticePage() {
                     </>
                   )}
                 </button>
+
+                <button
+                  type="button"
+                  id="results-certificate-btn"
+                  onClick={() => setIsCertificateOpen(true)}
+                  className="flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-sm font-bold text-amber-300 hover:bg-amber-500/20 hover:border-amber-400 hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all active:scale-95"
+                  title="Generate & Download Verified Speed Certificate"
+                >
+                  <Award className="h-4 w-4 text-amber-400" />
+                  <span>Download Certificate</span>
+                </button>
               </div>
 
               {/* Guest Local Storage Notice & Sign in CTA */}
@@ -736,6 +752,26 @@ export default function PracticePage() {
         onClose={() => setIsCustomModalOpen(false)}
         onApply={handleCustomTextApply}
         initialText={config.customText}
+      />
+
+      {/* Typing Certificate Modal */}
+      <TypingCertificateModal
+        isOpen={isCertificateOpen}
+        onClose={() => setIsCertificateOpen(false)}
+        data={{
+          recipientName: user?.displayName || user?.username || 'KeySmasher Typist',
+          wpm: metrics.netWpm,
+          accuracy: metrics.accuracy,
+          consistency: metrics.consistency,
+          presetLabel:
+            config.mode === 'time'
+              ? `${config.durationSeconds}s Speed Test`
+              : config.mode === 'words'
+              ? `${config.targetWordCount} Words Speed Test`
+              : config.mode === 'quote'
+              ? 'Quote Mode Test'
+              : 'Custom Speed Test',
+        }}
       />
     </div>
   );

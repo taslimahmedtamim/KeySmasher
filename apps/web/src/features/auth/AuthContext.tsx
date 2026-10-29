@@ -274,10 +274,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+const defaultAuthContextValue: AuthContextValue = {
+  user: null,
+  isLoading: false,
+  isGuest: true,
+  signInWithEmail: async () => ({ error: 'Auth provider not mounted' }),
+  signUpWithEmail: async () => ({ error: 'Auth provider not mounted' }),
+  signInWithDemo: async () => {},
+  signOut: async () => {},
+  isAuthModalOpen: false,
+  authModalMode: 'signin',
+  openAuthModal: () => {},
+  closeAuthModal: () => {},
+};
+
 export const useAuth = (): AuthContextValue => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    return defaultAuthContextValue;
   }
   return context;
 };
+
