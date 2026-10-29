@@ -1,139 +1,176 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard,
-  Flame,
-  Target,
-  Trophy,
-  Zap,
   Lock,
-  LogIn,
+  Sparkles,
   ArrowRight,
+  TrendingUp,
+  Award,
+  Zap,
+  BarChart3,
   ShieldCheck,
+  CheckCircle2,
+  Play,
+  RotateCcw,
 } from 'lucide-react';
+import { useAuth } from '@/features/auth/AuthContext';
+import { useUserAnalytics } from '@/features/dashboard/useUserAnalytics';
+import { DashboardProfileBanner } from '@/features/dashboard/components/DashboardProfileBanner';
+import { KpiMetricsGrid } from '@/features/dashboard/components/KpiMetricsGrid';
+import { ProgressionChart } from '@/features/dashboard/components/ProgressionChart';
+import { PersonalBestsGrid } from '@/features/dashboard/components/PersonalBestsGrid';
+import { AcademyMasteryCard } from '@/features/dashboard/components/AcademyMasteryCard';
+import { SessionHistoryTable } from '@/features/dashboard/components/SessionHistoryTable';
 
 export default function DashboardPage() {
-  // Guest by default. Connected to Supabase session in Phase F.
-  const [isSignedIn, setIsSignedIn] = useState(false);
+  const { user, isGuest, openAuthModal, signInWithDemo, isLoading } = useAuth();
+  const {
+    summary,
+    personalBests,
+    progression,
+    sessions,
+    academy,
+    exportHistoryJson,
+    exportHistoryCsv,
+    refreshAnalytics,
+  } = useUserAnalytics();
 
-  if (!isSignedIn) {
+  // If user is not authenticated, render the Cyberpunk Account Unlock Gateway
+  if (isGuest || !user) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center px-4 py-16">
-        <div className="w-full max-w-lg rounded-2xl border border-surface-border bg-surface p-8 text-center shadow-neon-card">
-          <div className="mx-auto mb-4 inline-flex rounded-2xl bg-cyan-500/10 p-4 text-cyan-400 border border-cyan-500/20">
-            <Lock className="h-8 w-8" />
-          </div>
+      <div className="py-12 sm:py-16">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-3xl border border-surface-border bg-gradient-to-b from-surface via-surface/95 to-surface-muted/40 p-6 sm:p-10 text-center shadow-neon-card">
+            {/* Ambient background glow */}
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-64 w-96 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
 
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">
-            Sign In Required
-          </h1>
-          <p className="mt-3 text-sm text-slate-300 leading-relaxed">
-            The Personal Dashboard, lifetime statistics, streak tracking, and weak-key analytics
-            are exclusive to registered accounts. Practice tests and public competitions remain 100% open for guests.
-          </p>
+            <div className="relative">
+              <div className="mx-auto inline-flex rounded-2xl bg-cyan-500/10 p-3.5 text-cyan-400 border border-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.2)]">
+                <Lock className="h-7 w-7" />
+              </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              type="button"
-              id="dashboard-signin-btn"
-              onClick={() => setIsSignedIn(true)}
-              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-cyan-500 px-6 py-3 text-sm font-bold text-slate-950 hover:bg-cyan-400 hover:shadow-neon-cyan transition-all"
-            >
-              <LogIn className="h-4 w-4" />
-              <span>Sign In (Demo Account)</span>
-            </button>
-            <Link
-              href="/practice"
-              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-surface-border bg-surface-muted px-6 py-3 text-sm font-semibold text-slate-300 hover:text-white hover:border-slate-600 transition-all"
-            >
-              <span>Practice as Guest</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
+                <LayoutDashboard className="h-3 w-3" />
+                <span>Personal Performance & Analytics Hub</span>
+              </div>
 
-          <div className="mt-6 flex items-center justify-center gap-2 text-[11px] text-slate-500">
-            <ShieldCheck className="h-3.5 w-3.5 text-cyan-400" />
-            <span>Full Supabase Database & Auth will be integrated in Feature F</span>
+              <h1 className="mt-4 text-2xl sm:text-4xl font-black text-white">
+                Unlock Your Typist Dashboard
+              </h1>
+              <p className="mt-2 text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
+                Sign in to view your lifetime WPM trends, personal best records across all presets,
+                touch typing academy star mastery, and weak key performance diagnostics.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
+                <button
+                  type="button"
+                  id="dashboard-demo-login-btn"
+                  onClick={() => signInWithDemo()}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-purple-500/40 bg-purple-500/15 py-3 px-5 text-xs font-bold text-purple-300 hover:bg-purple-500/25 hover:border-purple-400 hover:shadow-[0_0_20px_rgba(168,85,247,0.3)] transition-all active:scale-95"
+                >
+                  <Sparkles className="h-4 w-4 text-purple-400" />
+                  <span>1-Click Demo Account Login</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="dashboard-signin-btn"
+                  onClick={() => openAuthModal('signin')}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-cyan-500 py-3 px-5 text-xs font-bold text-slate-950 hover:bg-cyan-400 hover:shadow-neon-cyan transition-all active:scale-95"
+                >
+                  <span>Sign In / Create Account</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Guest Practice Shortcut */}
+              <div className="mt-4">
+                <Link
+                  href="/practice"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-cyan-300 transition-colors"
+                >
+                  <span>Or continue typing as guest</span>
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+
+              {/* Feature Highlights Grid */}
+              <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-left border-t border-surface-border/60 pt-8">
+                <div className="rounded-2xl border border-surface-border bg-surface-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-cyan-400">
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="text-xs font-bold text-white">Progression Curves</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-400 leading-normal">
+                    Interactive SVG charts plotting your raw & net speed, accuracy ratio, and
+                    consistency score over time.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-surface-border bg-surface-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-amber-400">
+                    <Award className="h-4 w-4" />
+                    <span className="text-xs font-bold text-white">Hall of Records</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-400 leading-normal">
+                    Verified personal best badges across 15s, 30s, 60s, 120s time modes and 10, 25,
+                    50, 100 word presets.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-surface-border bg-surface-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-purple-400">
+                    <Zap className="h-4 w-4" />
+                    <span className="text-xs font-bold text-white">Academy Mastery</span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-400 leading-normal">
+                    Full curriculum tracking across 24 structured lessons with 3-star accuracy
+                    ratings and finger discipline.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  // Authenticated Dashboard Layout
   return (
-    <div className="py-10">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-surface-border pb-6">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
-              <LayoutDashboard className="h-3.5 w-3.5" />
-              <span>Personal Analytics & Training Hub</span>
-            </div>
-            <h1 className="mt-3 text-3xl font-extrabold text-white sm:text-4xl">
-              User Dashboard
-            </h1>
-            <p className="mt-1 text-sm text-slate-400">
-              Track typing speed progression, accuracy metrics, weak keys, and daily streaks.
-            </p>
-          </div>
+    <div className="py-6 sm:py-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
+        {/* 1. Profile & Quick Actions Banner */}
+        <DashboardProfileBanner
+          summary={summary}
+          academy={academy}
+          onExportJson={exportHistoryJson}
+          onExportCsv={exportHistoryCsv}
+        />
 
-          <div className="mt-4 md:mt-0">
-            <button
-              type="button"
-              onClick={() => setIsSignedIn(false)}
-              className="text-xs text-slate-400 hover:text-rose-400 underline"
-            >
-              Sign out of dashboard
-            </button>
-          </div>
+        {/* 2. Top Headline KPIs (Peak WPM, Avg WPM, Accuracy, Consistency, Streak) */}
+        <KpiMetricsGrid summary={summary} />
+
+        {/* 3. Speed & Precision Progression Curve */}
+        <ProgressionChart points={progression} />
+
+        {/* 4. Personal Bests Records Matrix & Academy Mastery Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <PersonalBestsGrid records={personalBests} />
+          <AcademyMasteryCard academy={academy} />
         </div>
 
-        {/* Summary Stat Cards Preview */}
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-2xl border border-surface-border bg-surface p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase text-slate-400">Personal Best</span>
-              <Trophy className="h-4 w-4 text-amber-400" />
-            </div>
-            <div className="mt-2 text-2xl font-black text-white">
-              — <span className="text-xs text-slate-400 font-normal">WPM</span>
-            </div>
-            <div className="mt-1 text-xs text-slate-500">Record waiting</div>
-          </div>
-
-          <div className="rounded-2xl border border-surface-border bg-surface p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase text-slate-400">Average WPM</span>
-              <Zap className="h-4 w-4 text-cyan-400" />
-            </div>
-            <div className="mt-2 text-2xl font-black text-white">—</div>
-            <div className="mt-1 text-xs text-slate-500">Across completed tests</div>
-          </div>
-
-          <div className="rounded-2xl border border-surface-border bg-surface p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase text-slate-400">Accuracy</span>
-              <Target className="h-4 w-4 text-emerald-400" />
-            </div>
-            <div className="mt-2 text-2xl font-black text-white">
-              — <span className="text-xs text-slate-400 font-normal">%</span>
-            </div>
-            <div className="mt-1 text-xs text-slate-500">Lifetime average</div>
-          </div>
-
-          <div className="rounded-2xl border border-surface-border bg-surface p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase text-slate-400">Daily Streak</span>
-              <Flame className="h-4 w-4 text-orange-400" />
-            </div>
-            <div className="mt-2 text-2xl font-black text-white">
-              0 <span className="text-xs text-slate-400 font-normal">days</span>
-            </div>
-            <div className="mt-1 text-xs text-slate-500">Start practicing today</div>
-          </div>
-        </div>
+        {/* 5. Detailed Session History Audit Table */}
+        <SessionHistoryTable
+          sessions={sessions}
+          onExportCsv={exportHistoryCsv}
+          onExportJson={exportHistoryJson}
+        />
       </div>
     </div>
   );
