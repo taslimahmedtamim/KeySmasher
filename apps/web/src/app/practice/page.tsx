@@ -14,6 +14,8 @@ import {
   ArrowRight,
   RefreshCw,
   Info,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import {
   PassageDifficulty,
@@ -25,6 +27,7 @@ import { useTypingEngine } from '@/features/typing/useTypingEngine';
 import { TypingArea } from '@/features/typing/components/TypingArea';
 
 export default function PracticePage() {
+  const [zenMode, setZenMode] = useState(false);
   const {
     status,
     config,
@@ -148,49 +151,64 @@ export default function PracticePage() {
           </div>
         </div>
 
-        {/* Live Metrics Header */}
-        <div className="mt-8 flex items-center justify-between border-b border-surface-border pb-4">
-          <div className="flex items-center gap-8">
-            <div>
+        {/* Live Metrics Header (Fixed width columns & tabular numbers to prevent layout shifts) */}
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-b border-surface-border pb-4">
+          <div className="flex items-center gap-6 sm:gap-8">
+            <div className="w-24 shrink-0 text-left">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Raw WPM
               </div>
-              <div className="text-3xl font-black text-cyan-400">
-                {metrics.rawWpm}
+              <div className="text-3xl font-black text-cyan-400 font-mono tabular-nums">
+                {zenMode && status === 'active' ? '—' : Math.round(metrics.rawWpm)}
               </div>
             </div>
 
-            <div>
+            <div className="w-24 shrink-0 text-left">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Net WPM
               </div>
-              <div className="text-3xl font-black text-white">
-                {metrics.netWpm}
+              <div className="text-3xl font-black text-white font-mono tabular-nums">
+                {zenMode && status === 'active' ? '—' : Math.round(metrics.netWpm)}
               </div>
             </div>
 
-            <div>
+            <div className="w-24 shrink-0 text-left">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Accuracy
               </div>
-              <div className="text-3xl font-black text-emerald-400">
-                {metrics.accuracy}%
+              <div className="text-3xl font-black text-emerald-400 font-mono tabular-nums">
+                {zenMode && status === 'active' ? '—' : `${Math.round(metrics.accuracy)}%`}
               </div>
             </div>
 
-            <div>
+            <div className="w-28 shrink-0 text-left">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                {config.mode === 'time' ? 'Time Remaining' : 'Progress'}
+                {config.mode === 'time' ? 'Time Left' : 'Progress'}
               </div>
-              <div className="text-3xl font-black text-slate-200">
+              <div className="text-3xl font-black text-slate-200 font-mono tabular-nums">
                 {config.mode === 'time'
-                  ? `${metrics.timeRemaining}s`
+                  ? `${Math.max(0, Math.ceil(metrics.timeRemaining))}s`
                   : `${metrics.completedWordsCount} / ${config.targetWordCount}`}
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              id="practice-zen-toggle"
+              onClick={() => setZenMode(!zenMode)}
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
+                zenMode
+                  ? 'border-purple-500/40 bg-purple-950/30 text-purple-300'
+                  : 'border-slate-700 bg-surface text-slate-400 hover:text-white'
+              }`}
+              title="Zen Mode: Hide live WPM during typing to focus purely on the text"
+            >
+              {zenMode ? <EyeOff className="h-3.5 w-3.5 text-purple-400" /> : <Eye className="h-3.5 w-3.5" />}
+              <span>{zenMode ? 'Zen: On' : 'Zen: Off'}</span>
+            </button>
+
             <button
               type="button"
               id="practice-restart-btn"

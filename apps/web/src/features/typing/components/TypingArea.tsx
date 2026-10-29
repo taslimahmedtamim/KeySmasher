@@ -28,27 +28,32 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeWordRef = useRef<HTMLDivElement>(null);
+  const lastRowTopRef = useRef<number>(0);
 
-  // Auto-scroll when user advances lines
+  // Auto-scroll only when active word moves to a new line
   useEffect(() => {
     if (activeWordRef.current && containerRef.current) {
       const container = containerRef.current;
       const word = activeWordRef.current;
       const wordTop = word.offsetTop;
-      const containerTop = container.offsetTop;
-      const relativeTop = wordTop - containerTop;
 
-      // When the active word is past the second line (approx 70px), scroll down to keep it centered
-      if (relativeTop > 70) {
-        container.scrollTo({
-          top: relativeTop - 35,
-          behavior: 'smooth',
-        });
-      } else if (relativeTop < 20) {
-        container.scrollTo({
-          top: 0,
-          behavior: 'smooth',
-        });
+      // Only scroll when transitioning to a distinctly different line (> 25px height difference)
+      if (Math.abs(wordTop - lastRowTopRef.current) > 25) {
+        lastRowTopRef.current = wordTop;
+        const containerTop = container.offsetTop;
+        const relativeTop = wordTop - containerTop;
+
+        if (relativeTop > 65) {
+          container.scrollTo({
+            top: wordTop - containerTop - 45,
+            behavior: 'smooth',
+          });
+        } else if (relativeTop <= 35) {
+          container.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+          });
+        }
       }
     }
   }, [currentWordIndex]);

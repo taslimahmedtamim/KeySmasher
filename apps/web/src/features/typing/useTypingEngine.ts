@@ -166,7 +166,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
 
     return {
       ...baseMetrics,
-      timeRemaining: Math.round(timeRemaining * 10) / 10,
+      timeRemaining: Math.ceil(timeRemaining),
       completedWordsCount: currentWordIndex,
       totalWordsCount: expectedWords.length,
       missedCharacters: characterCounts.missed,
@@ -204,35 +204,36 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       const currentNow = Date.now();
       const elapsed = (currentNow - startTimeRef.current) / 1000;
 
-      setElapsedSeconds(elapsed);
+      // Update UI elapsed seconds every full second to prevent frantic jumping
+      const wholeSeconds = Math.floor(elapsed);
+      if (wholeSeconds !== lastRecordedSecondRef.current) {
+        lastRecordedSecondRef.current = wholeSeconds;
+        setElapsedSeconds(wholeSeconds);
 
-      // Record WPM history point every 1 full second
-      const currentFullSecond = Math.floor(elapsed);
-      if (currentFullSecond > lastRecordedSecondRef.current && currentFullSecond > 0) {
-        lastRecordedSecondRef.current = currentFullSecond;
+        if (wholeSeconds > 0) {
+          const snapshot = calculateTypingMetrics({
+            totalTypedCharacters: characterCounts.totalTyped,
+            correctCharacters: characterCounts.correct,
+            incorrectCharacters: characterCounts.incorrect,
+            elapsedSeconds: wholeSeconds,
+          });
 
-        // Current snapshot metrics
-        const snapshot = calculateTypingMetrics({
-          totalTypedCharacters: characterCounts.totalTyped,
-          correctCharacters: characterCounts.correct,
-          incorrectCharacters: characterCounts.incorrect,
-          elapsedSeconds: elapsed,
-        });
-
-        setWpmHistory((prev) => [
-          ...prev,
-          {
-            second: currentFullSecond,
-            rawWpm: snapshot.rawWpm,
-            netWpm: snapshot.netWpm,
-            accuracy: snapshot.accuracy,
-            errors: characterCounts.incorrect,
-          },
-        ]);
+          setWpmHistory((prev) => [
+            ...prev,
+            {
+              second: wholeSeconds,
+              rawWpm: snapshot.rawWpm,
+              netWpm: snapshot.netWpm,
+              accuracy: snapshot.accuracy,
+              errors: characterCounts.incorrect,
+            },
+          ]);
+        }
       }
 
       // Check time expiration in time mode
       if (config.mode === 'time' && elapsed >= config.durationSeconds) {
+        setElapsedSeconds(config.durationSeconds);
         completeTest();
       }
     }, 100);
