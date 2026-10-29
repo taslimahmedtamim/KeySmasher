@@ -16,21 +16,8 @@ export const PersonalBestsGrid: React.FC<PersonalBestsGridProps> = ({ records })
   const wordRecords = records.filter((r) => r.category === 'words');
   const quoteRecord = records.find((r) => r.category === 'quote');
 
-  const getPracticeUrl = (record: PersonalBestRecord): string => {
-    if (record.category === 'time') {
-      const duration = record.preset.replace('time-', '');
-      return `/practice?mode=time&duration=${duration}`;
-    }
-    if (record.category === 'words') {
-      const words = record.preset.replace('words-', '');
-      return `/practice?mode=words&words=${words}`;
-    }
-    return '/practice?mode=quote';
-  };
-
   const renderPresetCard = (record: PersonalBestRecord) => {
     const hasRecord = record.wpm > 0;
-    const practiceUrl = getPracticeUrl(record);
 
     return (
       <div
@@ -41,7 +28,7 @@ export const PersonalBestsGrid: React.FC<PersonalBestsGridProps> = ({ records })
             : 'border-surface-border/60 bg-surface-muted/20 hover:border-slate-700'
         }`}
       >
-        {/* Card Header: Icon, Label, and Badge */}
+        {/* Card Header: Icon, Label, and Trophy */}
         <div className="flex items-center justify-between gap-1.5">
           <span className="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-300 whitespace-nowrap">
             {record.category === 'time' && <Clock className="h-3.5 w-3.5 text-cyan-400 shrink-0" />}
@@ -51,14 +38,9 @@ export const PersonalBestsGrid: React.FC<PersonalBestsGridProps> = ({ records })
           </span>
 
           {hasRecord ? (
-            <span className="flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-400">
-              <Trophy className="h-3 w-3 fill-amber-400/30 text-amber-400" />
-              <span className="hidden sm:inline">Record</span>
-            </span>
+            <Trophy className="h-3.5 w-3.5 text-amber-400 fill-amber-400/20 shrink-0" />
           ) : (
-            <span className="rounded-full border border-slate-700/60 bg-surface-muted px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
-              Unranked
-            </span>
+            <span className="text-xs text-slate-600 font-mono">—</span>
           )}
         </div>
 
@@ -80,24 +62,17 @@ export const PersonalBestsGrid: React.FC<PersonalBestsGridProps> = ({ records })
           </span>
         </div>
 
-        {/* Bottom Footer: Stats or Play Preset link */}
-        <div className="mt-3 flex items-center justify-between border-t border-surface-border/50 pt-2 text-[11px] font-mono">
+        {/* Bottom Footer: Stats or No Record Yet */}
+        <div className="mt-3 border-t border-surface-border/50 pt-2 text-[11px] font-mono">
           {hasRecord ? (
-            <>
+            <div className="flex items-center justify-between">
               <span className="text-emerald-400 font-semibold">{record.accuracy}% acc</span>
               <span className="text-purple-400 font-semibold">{record.consistency}% con</span>
-            </>
+            </div>
           ) : (
-            <>
-              <span className="text-slate-500 text-[11px] font-medium">No record yet</span>
-              <Link
-                href={practiceUrl}
-                className="inline-flex items-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400 transition-all active:scale-95"
-              >
-                <Play className="h-2.5 w-2.5 fill-current" />
-                <span>Play Preset</span>
-              </Link>
-            </>
+            <div className="text-center text-xs font-semibold text-slate-500">
+              No Record Yet
+            </div>
           )}
         </div>
       </div>
