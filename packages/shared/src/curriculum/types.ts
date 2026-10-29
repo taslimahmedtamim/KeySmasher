@@ -13,6 +13,18 @@ export type FingerName =
 
 export type HandName = 'left' | 'right';
 
+export type ReachMotion =
+  | 'home'
+  | 'reach-up'
+  | 'reach-down'
+  | 'reach-left'
+  | 'reach-right'
+  | 'reach-up-left'
+  | 'reach-up-right'
+  | 'reach-down-left'
+  | 'reach-down-right'
+  | 'thumb-press';
+
 export interface KeyFingerGuide {
   char: string;
   display: string;
@@ -20,6 +32,9 @@ export interface KeyFingerGuide {
   hand: HandName;
   row: 'number' | 'top' | 'home' | 'bottom' | 'space';
   colorClass: string;
+  homeKey: string;
+  motion: ReachMotion;
+  instruction: string;
 }
 
 export type LessonCategory = 'intro' | 'words' | 'sentences' | 'milestone';

@@ -8,6 +8,7 @@ import {
   getLessonById,
 } from '@keysmasher/shared';
 import { VisualKeyboard } from '@/features/academy/components/VisualKeyboard';
+import { HandsVisualizer } from '@/features/academy/components/HandsVisualizer';
 import {
   saveLessonProgress,
   getLessonProgress,
@@ -71,16 +72,42 @@ describe('Feature D & E: Learning Academy & Keyboard Finger Guidance', () => {
       expect(getFingerForKey(' ')?.finger).toBe('thumb');
     });
 
-    it('renders VisualKeyboard with illuminated target key and finger name', () => {
-      const { rerender } = render(<VisualKeyboard activeChar="f" />);
+    it('provides home anchor key and step-by-step movement instruction', () => {
+      const gGuide = getFingerForKey('g');
+      expect(gGuide).toBeDefined();
+      expect(gGuide?.finger).toBe('left-index');
+      expect(gGuide?.homeKey).toBe('f');
+      expect(gGuide?.motion).toBe('reach-right');
+      expect(gGuide?.instruction).toContain('reaches 1 key right');
+
+      const fGuide = getFingerForKey('f');
+      expect(fGuide?.homeKey).toBe('f');
+      expect(fGuide?.motion).toBe('home');
+      expect(fGuide?.instruction).toContain('tactile bump');
+    });
+
+    it('renders VisualKeyboard with illuminated target key, home anchor, and finger name', () => {
+      const { rerender } = render(<VisualKeyboard activeChar="g" />);
 
       expect(screen.getByText(/Target Key:/i)).toBeInTheDocument();
       expect(screen.getByText('Left Index')).toBeInTheDocument();
+      expect(screen.getByText(/Home \[F\]/i)).toBeInTheDocument();
+      expect(screen.getByText(/Reach \[G\]/i)).toBeInTheDocument();
 
       // Check spacebar rendering
       rerender(<VisualKeyboard activeChar=" " />);
       expect(screen.getAllByText('Thumb').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('␣ Space')).toBeInTheDocument();
+    });
+
+    it('renders HandsVisualizer showing both hands and natural movement coach', () => {
+      render(<HandsVisualizer activeChar="g" />);
+
+      expect(screen.getByText(/Anatomical Finger Placement Guide/i)).toBeInTheDocument();
+      expect(screen.getAllByText('Left Hand').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('Right Hand')).toBeInTheDocument();
+      expect(screen.getByText(/Movement & Placement Instruction:/i)).toBeInTheDocument();
+      expect(screen.getByText(/reaches 1 key right from \[F\]/i)).toBeInTheDocument();
     });
   });
 

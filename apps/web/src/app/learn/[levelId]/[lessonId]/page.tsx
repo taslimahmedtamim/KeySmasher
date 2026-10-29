@@ -24,12 +24,14 @@ import {
 import { useTypingEngine } from '@/features/typing/useTypingEngine';
 import { TypingArea } from '@/features/typing/components/TypingArea';
 import { VisualKeyboard } from '@/features/academy/components/VisualKeyboard';
+import { HandsVisualizer } from '@/features/academy/components/HandsVisualizer';
 import {
   saveLessonProgress,
   getLessonProgress,
 } from '@/features/academy/utils/academyStorage';
 import { SoundTheme } from '@/features/typing/types';
 import { playKeystrokeSound } from '@/features/typing/utils/soundEffects';
+import { Hand, Keyboard, Layers } from 'lucide-react';
 
 interface LessonPageProps {
   params: Promise<{ levelId: string; lessonId: string }>;
@@ -46,6 +48,7 @@ export default function LessonRunnerPage({ params }: LessonPageProps) {
 
   const previousRecord = lesson ? getLessonProgress(lesson.id) : null;
   const savedRef = useRef(false);
+  const [guidanceMode, setGuidanceMode] = useState<'both' | 'hands' | 'keyboard'>('both');
 
   const {
     status,
@@ -291,10 +294,66 @@ export default function LessonRunnerPage({ params }: LessonPageProps) {
           )}
         </div>
 
-        {/* Live Visual Interactive Keyboard with Real-Time Finger Highlighting */}
+        {/* Live Visual Interactive Finger & Keyboard Guidance */}
         {!isCompleted && (
-          <div className="mt-8 animate-fade-in">
-            <VisualKeyboard activeChar={activeChar} />
+          <div className="mt-8 space-y-4 animate-fade-in">
+            {/* Guidance Mode Selector */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Visual Placement Guidance:
+              </span>
+
+              <div className="flex items-center gap-1 rounded-xl border border-surface-border bg-surface p-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setGuidanceMode('both')}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-all ${
+                    guidanceMode === 'both'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-neon-cyan'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  <span>Hands & Keys</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setGuidanceMode('hands')}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-all ${
+                    guidanceMode === 'hands'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-neon-cyan'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Hand className="h-3.5 w-3.5" />
+                  <span>Hands Only</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setGuidanceMode('keyboard')}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition-all ${
+                    guidanceMode === 'keyboard'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-neon-cyan'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Keyboard className="h-3.5 w-3.5" />
+                  <span>Keyboard Only</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Anatomical Hands Visualizer */}
+            {(guidanceMode === 'both' || guidanceMode === 'hands') && (
+              <HandsVisualizer activeChar={activeChar} />
+            )}
+
+            {/* Physical Matrix Keyboard with Reach and Anchor Cues */}
+            {(guidanceMode === 'both' || guidanceMode === 'keyboard') && (
+              <VisualKeyboard activeChar={activeChar} />
+            )}
           </div>
         )}
       </div>

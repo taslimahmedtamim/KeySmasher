@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { getFingerForKey, FINGER_NAMES, FingerName } from '@keysmasher/shared';
+import { getFingerForKey, FINGER_NAMES, FingerName, KeyFingerGuide } from '@keysmasher/shared';
+import { ArrowRight, Compass } from 'lucide-react';
 
 interface VisualKeyboardProps {
   activeChar?: string;
@@ -85,40 +86,66 @@ export const VisualKeyboard: React.FC<VisualKeyboardProps> = ({
   compact = false,
 }) => {
   const normalizedActive = activeChar.toLowerCase();
-  const activeGuide = getFingerForKey(activeChar);
+  const activeGuide: KeyFingerGuide | null = getFingerForKey(activeChar);
   const activeFingerInfo = activeGuide ? FINGER_NAMES[activeGuide.finger] : null;
+  const isReach = Boolean(
+    activeGuide &&
+      activeGuide.homeKey.toLowerCase() !== normalizedActive &&
+      normalizedActive !== ' '
+  );
+  const homeAnchorChar = activeGuide ? activeGuide.homeKey.toLowerCase() : '';
 
   return (
     <div
-      className={`rounded-2xl border border-surface-border bg-surface/70 p-4 sm:p-6 backdrop-blur select-none ${className}`}
+      className={`rounded-2xl border border-surface-border bg-surface/75 p-4 sm:p-6 backdrop-blur shadow-neon-card select-none ${className}`}
     >
       {/* Active Finger Hint Bar */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-surface-border/60 pb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Target Key:</span>
-          <span className="flex h-7 min-w-7 items-center justify-center rounded-lg border border-cyan-400/50 bg-cyan-500/10 px-2 font-mono text-sm font-bold text-cyan-300 shadow-neon-cyan">
-            {activeChar === ' ' ? '␣ Space' : activeChar || '—'}
-          </span>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-surface-border/60 pb-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Target Key:</span>
+            <span className="flex h-7 min-w-7 items-center justify-center rounded-lg border border-cyan-400/50 bg-cyan-500/10 px-2.5 font-mono text-sm font-black text-cyan-300 shadow-neon-cyan">
+              {activeChar === ' ' ? '␣ Space' : activeChar || '—'}
+            </span>
+          </div>
+
+          {activeFingerInfo && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">Finger:</span>
+              <span
+                className={`rounded-lg border px-2.5 py-1 text-xs font-bold font-mono ${activeFingerInfo.colorClass}`}
+              >
+                {activeFingerInfo.label}
+              </span>
+            </div>
+          )}
         </div>
 
-        {activeFingerInfo && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Assigned Finger:</span>
-            <span
-              className={`rounded-lg border px-2.5 py-1 text-xs font-bold font-mono ${activeFingerInfo.colorClass}`}
-            >
-              {activeFingerInfo.label}
-            </span>
+        {/* Reach Vector Indicator */}
+        {activeGuide && isReach && (
+          <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1 font-mono text-xs">
+            <span className="text-amber-300 font-bold">Home [{activeGuide.homeKey.toUpperCase()}]</span>
+            <ArrowRight className="h-3.5 w-3.5 text-cyan-400" />
+            <span className="text-cyan-300 font-black">Reach [{activeChar.toUpperCase()}]</span>
           </div>
         )}
       </div>
 
+      {/* Movement instruction cue */}
+      {activeGuide && (
+        <div className="mb-4 rounded-xl border border-surface-border bg-surface-muted/50 px-3.5 py-2 flex items-center gap-2 text-xs text-slate-300">
+          <Compass className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+          <span className="font-medium">{activeGuide.instruction}</span>
+        </div>
+      )}
+
       {/* Keyboard Matrix */}
-      <div className="flex flex-col items-center gap-1.5 sm:gap-2 overflow-x-auto py-1">
+      <div className="flex flex-col items-center gap-1.5 sm:gap-2 overflow-x-auto py-2">
         {KEYBOARD_ROWS.map((row, rIdx) => (
           <div key={rIdx} className="flex items-center gap-1 sm:gap-1.5">
             {row.map((key) => {
               const isTarget = normalizedActive === key.char;
+              const isHomeAnchor = isReach && key.char === homeAnchorChar;
               const isSpace = key.char === ' ';
               const isHomingKey = key.char === 'f' || key.char === 'j';
 
@@ -137,11 +164,27 @@ export const VisualKeyboard: React.FC<VisualKeyboardProps> = ({
                   key={key.char}
                   className={`relative flex items-center justify-center rounded-lg border font-mono font-semibold transition-all duration-150 ${keyWidth} ${
                     isTarget
-                      ? 'scale-110 z-10 border-cyan-400 bg-cyan-400 text-slate-950 font-black shadow-[0_0_18px_#22d3ee] animate-bounce-subtle'
+                      ? 'scale-110 z-20 border-cyan-300 bg-cyan-400 text-slate-950 font-black shadow-[0_0_20px_#22d3ee] animate-bounce-subtle'
+                      : isHomeAnchor
+                      ? 'z-10 border-2 border-dashed border-amber-400 bg-amber-400/20 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                       : `bg-surface-muted/90 text-slate-300 ${fingerBorder}`
                   }`}
                 >
                   <span>{isSpace ? '— Space —' : key.label}</span>
+
+                  {/* Home anchor badge */}
+                  {isHomeAnchor && (
+                    <span className="absolute -top-2.5 rounded bg-amber-400 px-1 py-0.2 font-mono text-[8px] font-black text-slate-950 shadow-sm">
+                      HOME
+                    </span>
+                  )}
+
+                  {/* Target press badge */}
+                  {isTarget && !isSpace && (
+                    <span className="absolute -top-2.5 rounded bg-cyan-300 px-1 py-0.2 font-mono text-[8px] font-black text-slate-950 shadow-sm">
+                      PRESS
+                    </span>
+                  )}
 
                   {/* Physical tactile bump bar for F and J */}
                   {isHomingKey && !isTarget && (
@@ -155,26 +198,33 @@ export const VisualKeyboard: React.FC<VisualKeyboardProps> = ({
       </div>
 
       {/* Finger Legend */}
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-3 pt-3 border-t border-surface-border/50 text-[11px] font-mono">
-        <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
-          <span className="text-slate-400">Pinky</span>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-surface-border/50 text-[11px] font-mono">
+        <div className="flex items-center gap-1.5 text-slate-400">
+          <span className="h-2 w-2 rounded-full bg-cyan-400" />
+          <span>Tactile bumps on [F] & [J]</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-          <span className="text-slate-400">Ring</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-          <span className="text-slate-400">Middle</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-cyan-400" />
-          <span className="text-slate-400">Index</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-          <span className="text-slate-400">Thumb</span>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+            <span className="text-slate-400">Pinky</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+            <span className="text-slate-400">Ring</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            <span className="text-slate-400">Middle</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-cyan-400" />
+            <span className="text-slate-400">Index</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+            <span className="text-slate-400">Thumb</span>
+          </div>
         </div>
       </div>
     </div>
