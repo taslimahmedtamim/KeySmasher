@@ -22,10 +22,10 @@ const PRESET_DEFINITIONS: {
   category: 'time' | 'words' | 'quote';
   targetValue?: number;
 }[] = [
-  { preset: 'time-15', label: '15 Seconds', category: 'time', targetValue: 15 },
-  { preset: 'time-30', label: '30 Seconds', category: 'time', targetValue: 30 },
-  { preset: 'time-60', label: '60 Seconds', category: 'time', targetValue: 60 },
-  { preset: 'time-120', label: '120 Seconds', category: 'time', targetValue: 120 },
+  { preset: 'time-15', label: '15s Time', category: 'time', targetValue: 15 },
+  { preset: 'time-30', label: '30s Time', category: 'time', targetValue: 30 },
+  { preset: 'time-60', label: '60s Time', category: 'time', targetValue: 60 },
+  { preset: 'time-120', label: '120s Time', category: 'time', targetValue: 120 },
   { preset: 'words-10', label: '10 Words', category: 'words', targetValue: 10 },
   { preset: 'words-25', label: '25 Words', category: 'words', targetValue: 25 },
   { preset: 'words-50', label: '50 Words', category: 'words', targetValue: 50 },

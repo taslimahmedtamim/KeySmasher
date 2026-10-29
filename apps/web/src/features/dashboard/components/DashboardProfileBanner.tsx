@@ -89,42 +89,44 @@ export const DashboardProfileBanner: React.FC<DashboardProfileBannerProps> = ({
           </div>
 
           {/* Quick Stats Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full lg:w-auto">
-            <div className="rounded-xl border border-surface-border bg-surface-muted/60 p-3 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[11px] text-slate-400 uppercase font-semibold">
-                <Keyboard className="h-3 w-3 text-cyan-400" />
-                <span>Tests Taken</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 w-full xl:w-auto">
+            <div className="rounded-xl border border-surface-border bg-surface-muted/60 px-3.5 py-2.5 text-center sm:text-left min-w-[115px]">
+              <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[11px] text-slate-400 uppercase font-semibold tracking-wider whitespace-nowrap">
+                <Keyboard className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                <span className="whitespace-nowrap">Tests Taken</span>
               </div>
-              <div className="mt-1 text-lg font-black text-white">{summary.totalTests}</div>
+              <div className="mt-1 text-lg sm:text-xl font-black text-white font-mono whitespace-nowrap">
+                {summary.totalTests}
+              </div>
             </div>
 
-            <div className="rounded-xl border border-surface-border bg-surface-muted/60 p-3 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[11px] text-slate-400 uppercase font-semibold">
-                <Clock className="h-3 w-3 text-emerald-400" />
-                <span>Practice Time</span>
+            <div className="rounded-xl border border-surface-border bg-surface-muted/60 px-3.5 py-2.5 text-center sm:text-left min-w-[115px]">
+              <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[11px] text-slate-400 uppercase font-semibold tracking-wider whitespace-nowrap">
+                <Clock className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                <span className="whitespace-nowrap">Practice Time</span>
               </div>
-              <div className="mt-1 text-lg font-black text-white">
+              <div className="mt-1 text-lg sm:text-xl font-black text-white font-mono whitespace-nowrap">
                 {formatTime(summary.totalTimeSeconds)}
               </div>
             </div>
 
-            <div className="rounded-xl border border-surface-border bg-surface-muted/60 p-3 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[11px] text-slate-400 uppercase font-semibold">
-                <Award className="h-3 w-3 text-amber-400" />
-                <span>Stars Earned</span>
+            <div className="rounded-xl border border-surface-border bg-surface-muted/60 px-3.5 py-2.5 text-center sm:text-left min-w-[115px]">
+              <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[11px] text-slate-400 uppercase font-semibold tracking-wider whitespace-nowrap">
+                <Award className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <span className="whitespace-nowrap">Stars Earned</span>
               </div>
-              <div className="mt-1 text-lg font-black text-amber-300">
+              <div className="mt-1 text-lg sm:text-xl font-black text-amber-300 font-mono whitespace-nowrap">
                 {academy.totalStars}{' '}
                 <span className="text-xs text-slate-500 font-normal">/ {academy.maxStars}</span>
               </div>
             </div>
 
-            <div className="rounded-xl border border-surface-border bg-surface-muted/60 p-3 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[11px] text-slate-400 uppercase font-semibold">
-                <Flame className="h-3 w-3 text-orange-400" />
-                <span>Day Streak</span>
+            <div className="rounded-xl border border-surface-border bg-surface-muted/60 px-3.5 py-2.5 text-center sm:text-left min-w-[115px]">
+              <div className="flex items-center justify-center sm:justify-start gap-1.5 text-[11px] text-slate-400 uppercase font-semibold tracking-wider whitespace-nowrap">
+                <Flame className="h-3.5 w-3.5 text-orange-400 shrink-0" />
+                <span className="whitespace-nowrap">Day Streak</span>
               </div>
-              <div className="mt-1 text-lg font-black text-orange-400">
+              <div className="mt-1 text-lg sm:text-xl font-black text-orange-400 font-mono whitespace-nowrap">
                 {summary.dailyStreak}{' '}
                 <span className="text-xs font-normal">
                   {summary.dailyStreak === 1 ? 'day' : 'days'}

@@ -12,12 +12,165 @@ interface PersonalBestsGridProps {
 export const PersonalBestsGrid: React.FC<PersonalBestsGridProps> = ({ records }) => {
   const [activeCategory, setActiveCategory] = useState<'all' | 'time' | 'words' | 'quote'>('all');
 
-  const filtered = records.filter(
-    (r) => activeCategory === 'all' || r.category === activeCategory
-  );
+  const timeRecords = records.filter((r) => r.category === 'time');
+  const wordRecords = records.filter((r) => r.category === 'words');
+  const quoteRecord = records.find((r) => r.category === 'quote');
+
+  const getPracticeUrl = (record: PersonalBestRecord): string => {
+    if (record.category === 'time') {
+      const duration = record.preset.replace('time-', '');
+      return `/practice?mode=time&duration=${duration}`;
+    }
+    if (record.category === 'words') {
+      const words = record.preset.replace('words-', '');
+      return `/practice?mode=words&words=${words}`;
+    }
+    return '/practice?mode=quote';
+  };
+
+  const renderPresetCard = (record: PersonalBestRecord) => {
+    const hasRecord = record.wpm > 0;
+    const practiceUrl = getPracticeUrl(record);
+
+    return (
+      <div
+        key={record.preset}
+        className={`relative overflow-hidden rounded-2xl border p-4 transition-all flex flex-col justify-between ${
+          hasRecord
+            ? 'border-surface-border bg-surface-muted/40 hover:border-amber-500/50 hover:shadow-neon-card'
+            : 'border-surface-border/60 bg-surface-muted/20 hover:border-slate-700'
+        }`}
+      >
+        {/* Card Header: Icon, Label, and Badge */}
+        <div className="flex items-center justify-between gap-1.5">
+          <span className="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-300 whitespace-nowrap">
+            {record.category === 'time' && <Clock className="h-3.5 w-3.5 text-cyan-400 shrink-0" />}
+            {record.category === 'words' && <FileText className="h-3.5 w-3.5 text-purple-400 shrink-0" />}
+            {record.category === 'quote' && <Quote className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
+            <span className="whitespace-nowrap">{record.label}</span>
+          </span>
+
+          {hasRecord ? (
+            <span className="flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-400">
+              <Trophy className="h-3 w-3 fill-amber-400/30 text-amber-400" />
+              <span className="hidden sm:inline">Record</span>
+            </span>
+          ) : (
+            <span className="rounded-full border border-slate-700/60 bg-surface-muted px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+              Unranked
+            </span>
+          )}
+        </div>
+
+        {/* Main Body: Large WPM readout */}
+        <div className="mt-3 flex items-baseline gap-1 font-mono">
+          <span
+            className={`text-2xl sm:text-3xl font-black ${
+              hasRecord ? 'text-white' : 'text-slate-600'
+            }`}
+          >
+            {hasRecord ? record.wpm : '—'}
+          </span>
+          <span
+            className={`text-xs font-semibold ${
+              hasRecord ? 'text-slate-400' : 'text-slate-600'
+            }`}
+          >
+            WPM
+          </span>
+        </div>
+
+        {/* Bottom Footer: Stats or Play Preset link */}
+        <div className="mt-3 flex items-center justify-between border-t border-surface-border/50 pt-2 text-[11px] font-mono">
+          {hasRecord ? (
+            <>
+              <span className="text-emerald-400 font-semibold">{record.accuracy}% acc</span>
+              <span className="text-purple-400 font-semibold">{record.consistency}% con</span>
+            </>
+          ) : (
+            <>
+              <span className="text-slate-500 text-[11px] font-medium">No record yet</span>
+              <Link
+                href={practiceUrl}
+                className="inline-flex items-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400 transition-all active:scale-95"
+              >
+                <Play className="h-2.5 w-2.5 fill-current" />
+                <span>Play Preset</span>
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderQuoteShowcase = () => {
+    const hasRecord = (quoteRecord?.wpm || 0) > 0;
+
+    return (
+      <div className="rounded-2xl border border-surface-border bg-gradient-to-r from-surface-muted/60 via-surface-muted/30 to-amber-500/5 p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-amber-400 shrink-0">
+            <Quote className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-bold text-white">Quote Mode Record</h4>
+              {hasRecord && (
+                <span className="flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+                  <Trophy className="h-3 w-3 fill-amber-400/30 text-amber-400" />
+                  <span>Verified Record</span>
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Full literary passages testing authentic punctuation, capitalization, and typing rhythm.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 sm:gap-6 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-surface-border/60 pt-3 md:pt-0">
+          {hasRecord ? (
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase font-mono">Speed</div>
+                <div className="flex items-baseline gap-1 font-mono">
+                  <span className="text-2xl sm:text-3xl font-black text-white">{quoteRecord?.wpm}</span>
+                  <span className="text-xs font-semibold text-slate-400">WPM</span>
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase font-mono">Accuracy</div>
+                <div className="text-lg sm:text-xl font-black text-emerald-400 font-mono">
+                  {quoteRecord?.accuracy}%
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase font-mono">Consistency</div>
+                <div className="text-lg sm:text-xl font-black text-purple-400 font-mono">
+                  {quoteRecord?.consistency}%
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-slate-500 font-medium">No quote record verified yet</div>
+          )}
+
+          <Link
+            href="/practice?mode=quote"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/20 hover:border-amber-400 transition-all active:scale-95 shrink-0"
+          >
+            <Play className="h-3.5 w-3.5 fill-current" />
+            <span>Play Quote Mode</span>
+          </Link>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="rounded-3xl border border-surface-border bg-surface p-5 sm:p-6 shadow-neon-card">
+      {/* Header & Tabs */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-surface-border">
         <div>
           <div className="flex items-center gap-2">
@@ -53,65 +206,58 @@ export const PersonalBestsGrid: React.FC<PersonalBestsGridProps> = ({ records })
         </div>
       </div>
 
-      {/* Grid of Presets */}
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-        {filtered.map((record) => {
-          const hasRecord = record.wpm > 0;
-
-          return (
-            <div
-              key={record.preset}
-              className={`relative overflow-hidden rounded-2xl border p-4 transition-all flex flex-col justify-between ${
-                hasRecord
-                  ? 'border-surface-border bg-surface-muted/40 hover:border-amber-500/50 hover:shadow-neon-card'
-                  : 'border-dashed border-slate-800 bg-surface-muted/10 opacity-75'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-slate-300">
-                  {record.category === 'time' && <Clock className="h-3.5 w-3.5 text-cyan-400" />}
-                  {record.category === 'words' && <FileText className="h-3.5 w-3.5 text-purple-400" />}
-                  {record.category === 'quote' && <Quote className="h-3.5 w-3.5 text-amber-400" />}
-                  <span>{record.label}</span>
+      {/* Content Rendering based on Tab */}
+      <div className="mt-5 space-y-6">
+        {/* TIME TRIALS */}
+        {(activeCategory === 'all' || activeCategory === 'time') && (
+          <div>
+            {activeCategory === 'all' && (
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="h-3.5 w-3.5 text-cyan-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Time Trials
                 </span>
-
-                {hasRecord ? (
-                  <Trophy className="h-3.5 w-3.5 text-amber-400 fill-amber-400/20" />
-                ) : (
-                  <span className="text-[10px] text-slate-500 font-mono">—</span>
-                )}
               </div>
-
-              {hasRecord ? (
-                <div>
-                  <div className="mt-3 flex items-baseline gap-1 font-mono">
-                    <span className="text-2xl sm:text-3xl font-black text-white">
-                      {record.wpm}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-400">WPM</span>
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-between text-[11px] font-mono border-t border-surface-border/50 pt-2">
-                    <span className="text-emerald-400 font-semibold">{record.accuracy}% acc</span>
-                    <span className="text-purple-400 font-semibold">{record.consistency}% con</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-4 text-center py-1">
-                  <div className="text-xs font-semibold text-slate-500">No Record Yet</div>
-                  <Link
-                    href="/practice"
-                    className="mt-2 inline-flex items-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400 transition-all active:scale-95"
-                  >
-                    <Play className="h-2.5 w-2.5 fill-current" />
-                    <span>Play Preset</span>
-                  </Link>
-                </div>
-              )}
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              {timeRecords.map(renderPresetCard)}
             </div>
-          );
-        })}
+          </div>
+        )}
+
+        {/* WORD SPRINTS */}
+        {(activeCategory === 'all' || activeCategory === 'words') && (
+          <div>
+            {activeCategory === 'all' && (
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="h-3.5 w-3.5 text-purple-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Word Sprints
+                </span>
+              </div>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              {wordRecords.map(renderPresetCard)}
+            </div>
+          </div>
+        )}
+
+        {/* QUOTE MODE SHOWCASE */}
+        {(activeCategory === 'all' || activeCategory === 'quote') && (
+          <div>
+            {activeCategory === 'all' && (
+              <div className="flex items-center gap-2 mb-3">
+                <Quote className="h-3.5 w-3.5 text-amber-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Specialty Prose
+                </span>
+              </div>
+            )}
+            {renderQuoteShowcase()}
+          </div>
+        )}
       </div>
     </div>
   );
 };
+

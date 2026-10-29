@@ -27,12 +27,41 @@ function setRawStorage(data: Record<string, UserLessonProgress>): void {
   }
 }
 
+export function clearAcademyProgress(): void {
+  memoryProgress = {};
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem('keysmasher_user_academy_00000000-0000-4000-a000-000000000001');
+    }
+  } catch {
+    // Ignore
+  }
+}
+
 export function getAllLessonProgress(): Record<string, UserLessonProgress> {
-  return getRawStorage();
+  const all = getRawStorage();
+  const cleaned: Record<string, UserLessonProgress> = {};
+  let hadLegacySeed = false;
+
+  for (const [id, prog] of Object.entries(all)) {
+    // Prune legacy pre-seeded mock records from old demo iterations
+    if (!prog || (prog.completedAt && prog.completedAt < 1720000000000)) {
+      hadLegacySeed = true;
+      continue;
+    }
+    cleaned[id] = prog;
+  }
+
+  if (hadLegacySeed) {
+    setRawStorage(cleaned);
+  }
+
+  return cleaned;
 }
 
 export function getLessonProgress(lessonId: string): UserLessonProgress | null {
-  const all = getRawStorage();
+  const all = getAllLessonProgress();
   return all[lessonId] || null;
 }
 

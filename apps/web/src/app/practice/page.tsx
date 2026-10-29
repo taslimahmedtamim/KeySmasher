@@ -75,6 +75,39 @@ export default function PracticePage() {
     setSessionHistory(getStoredSessions());
   }, []);
 
+  // Support preset deep linking query params (e.g. ?mode=time&duration=30)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const modeParam = params.get('mode') as TestMode | null;
+      const durationParam = params.get('duration');
+      const wordsParam = params.get('words');
+
+      if (modeParam && ['time', 'words', 'quote', 'custom'].includes(modeParam)) {
+        const validDurations = [15, 30, 60, 120];
+        const validWords = [10, 25, 50, 100];
+        const parsedDur = durationParam ? parseInt(durationParam, 10) : undefined;
+        const parsedWords = wordsParam ? parseInt(wordsParam, 10) : undefined;
+
+        setConfig((prev) => ({
+          ...prev,
+          mode: modeParam,
+          durationSeconds:
+            parsedDur && validDurations.includes(parsedDur)
+              ? (parsedDur as TimeDurationOption)
+              : prev.durationSeconds,
+          targetWordCount:
+            parsedWords && validWords.includes(parsedWords)
+              ? (parsedWords as WordCountOption)
+              : prev.targetWordCount,
+        }));
+      }
+    } catch {
+      // Ignore
+    }
+  }, [setConfig]);
+
   // Save completed session to local history
   useEffect(() => {
     if (status === 'completed' && metrics.elapsedSeconds > 0) {
