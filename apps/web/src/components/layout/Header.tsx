@@ -12,13 +12,15 @@ export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isGuest, openAuthModal, signOut } = useAuth();
 
-  // Primary navigation items (accessible with or without signin)
-  const navItems = [
-    { name: 'Learn', href: '/learn', icon: BookOpen },
-    { name: 'Practice', href: '/practice', icon: Zap },
-    { name: 'Compete', href: '/compete', icon: Swords },
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  ];
+  // Primary navigation items (shown in main center nav after signin)
+  const navItems = user
+    ? [
+        { name: 'Learn', href: '/learn', icon: BookOpen },
+        { name: 'Practice', href: '/practice', icon: Zap },
+        { name: 'Compete', href: '/compete', icon: Swords },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      ]
+    : [];
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-surface-border bg-background/80 backdrop-blur-md">
@@ -49,36 +51,68 @@ export const Header: React.FC = () => {
           </div>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Main Navigation">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                id={`nav-link-${item.name.toLowerCase()}`}
-                className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all ${
-                  isActive
-                    ? 'border border-cyan-500/30 bg-surface-muted text-cyan-400 shadow-sm'
-                    : 'text-slate-300 hover:bg-surface hover:text-slate-100'
-                }`}
-              >
-                <Icon className={`h-4 w-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Desktop Navigation (Center: only shown when signed in) */}
+        {user && (
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Main Navigation">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  prefetch={true}
+                  id={`nav-link-${item.name.toLowerCase()}`}
+                  onClick={(e) => {
+                    if (isActive) {
+                      e.preventDefault();
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors duration-150 ${
+                    isActive
+                      ? 'border border-cyan-500/30 bg-surface-muted text-cyan-400 shadow-sm'
+                      : 'text-slate-300 hover:bg-surface hover:text-slate-100'
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
         {/* Right CTA / Auth controls */}
         <div className="hidden items-center gap-3 md:flex">
+          {!user && (
+            <Link
+              href="/practice"
+              prefetch={true}
+              id="nav-link-practice"
+              onClick={(e) => {
+                if (pathname === '/practice') {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors duration-150 ${
+                pathname === '/practice'
+                  ? 'border border-cyan-500/30 bg-surface-muted text-cyan-400 shadow-sm'
+                  : 'text-slate-300 hover:bg-surface hover:text-slate-100'
+              }`}
+            >
+              <Zap className={`h-4 w-4 ${pathname === '/practice' ? 'text-cyan-400' : 'text-slate-400'}`} />
+              <span>Quick Test</span>
+            </Link>
+          )}
+
           {user ? (
             <div className="flex items-center gap-2">
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-surface px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-cyan-400 hover:text-white transition-all shadow-sm"
+                prefetch={true}
+                className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-surface px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-cyan-400 hover:text-white transition-colors duration-150 shadow-sm"
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-300 font-bold font-mono text-[11px]">
                   {user.username.charAt(0).toUpperCase()}
@@ -94,7 +128,7 @@ export const Header: React.FC = () => {
               <button
                 type="button"
                 onClick={() => signOut()}
-                className="rounded-lg border border-slate-800 p-2 text-slate-400 hover:text-rose-400 hover:border-rose-500/50 transition-colors"
+                className="rounded-lg border border-slate-800 p-2 text-slate-400 hover:text-rose-400 hover:border-rose-500/50 transition-colors duration-150"
                 title="Sign Out"
                 aria-label="Sign Out"
               >
@@ -106,7 +140,7 @@ export const Header: React.FC = () => {
               type="button"
               id="auth-sign-in-btn"
               onClick={() => openAuthModal('signin')}
-              className="flex items-center gap-1.5 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-cyan-400 hover:shadow-neon-cyan active:scale-95"
+              className="flex items-center gap-1.5 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-cyan-400 hover:shadow-neon-cyan active:scale-95"
             >
               <LogIn className="h-4 w-4" />
               <span>Sign In</span>
@@ -132,14 +166,21 @@ export const Header: React.FC = () => {
       {mobileMenuOpen && (
         <div className="border-b border-surface-border bg-surface px-4 py-3 md:hidden">
           <div className="flex flex-col space-y-1">
-            {navItems.map((item) => {
+            {(user ? navItems : [{ name: 'Quick Test', href: '/practice', icon: Zap }]).map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
+                  prefetch={true}
+                  onClick={(e) => {
+                    setMobileMenuOpen(false);
+                    if (isActive) {
+                      e.preventDefault();
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
                     isActive
                       ? 'bg-cyan-500/10 text-cyan-400'

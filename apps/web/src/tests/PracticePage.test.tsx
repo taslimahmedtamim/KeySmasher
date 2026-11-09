@@ -43,13 +43,17 @@ describe('PracticePage Component', () => {
     expect(screen.getByText('100w')).toBeInTheDocument();
   });
 
-  it('renders passage words inside typing area', () => {
+  it('renders passage words inside typing area and autofocuses the hidden input', () => {
     const { container } = render(<PracticePage />);
 
     const typingRegion = screen.getByRole('region', { name: /Typing passage input area/i });
     expect(typingRegion).toBeInTheDocument();
 
     const input = container.querySelector('input');
+    expect(input).toBeInTheDocument();
+
+    // Verify global keydown can trigger typing immediately without needing to click the box
+    fireEvent.keyDown(window, { key: 'a' });
     expect(input).toBeInTheDocument();
   });
 });

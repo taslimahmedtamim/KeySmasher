@@ -35,10 +35,10 @@ describe('calculateTypingMetrics', () => {
     expect(metrics.cpm).toBe(300);
   });
 
-  it('should deduct errors from Net WPM and compute accurate accuracy percentage', () => {
+  it('should compute Net WPM based on correct characters and compute accurate accuracy percentage', () => {
     // 300 characters, 270 correct, 30 incorrect, 60 seconds
     // Raw WPM: 300 / 5 / 1 = 60 WPM
-    // Net words: (300/5) - 30 = 60 - 30 = 30 words in 1 min -> 30 Net WPM
+    // Net WPM: (270 / 5) / 1 = 54 Net WPM
     // Accuracy: (270 / 300) * 100 = 90%
     const metrics = calculateTypingMetrics({
       totalTypedCharacters: 300,
@@ -48,21 +48,35 @@ describe('calculateTypingMetrics', () => {
     });
 
     expect(metrics.rawWpm).toBe(60);
-    expect(metrics.netWpm).toBe(30);
+    expect(metrics.netWpm).toBe(54);
     expect(metrics.accuracy).toBe(90);
     expect(metrics.cpm).toBe(300);
   });
 
-  it('should clamp Net WPM to 0 when errors exceed word count', () => {
+  it('should correctly calculate Net WPM for partial errors without zero-clamping valid correct characters', () => {
     const metrics = calculateTypingMetrics({
       totalTypedCharacters: 50, // 10 words
-      correctCharacters: 10,
-      incorrectCharacters: 40, // 40 errors > 10 words
+      correctCharacters: 10,    // 2 words
+      incorrectCharacters: 40,
+      elapsedSeconds: 30,       // 0.5 min -> 2 / 0.5 = 4 Net WPM
+    });
+
+    expect(metrics.netWpm).toBe(4);
+    expect(metrics.rawWpm).toBe(20);
+    expect(metrics.accuracy).toBe(20);
+  });
+
+  it('should return 0 Net WPM and 0% accuracy when typing only wrong characters', () => {
+    const metrics = calculateTypingMetrics({
+      totalTypedCharacters: 50,
+      correctCharacters: 0,
+      incorrectCharacters: 50,
       elapsedSeconds: 30,
     });
 
     expect(metrics.netWpm).toBe(0);
-    expect(metrics.accuracy).toBe(20);
+    expect(metrics.accuracy).toBe(0);
+    expect(metrics.rawWpm).toBe(20); // (50/5) / 0.5 min = 20 Raw WPM
   });
 });
 

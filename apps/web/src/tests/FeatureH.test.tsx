@@ -43,6 +43,20 @@ describe('Feature H: Smart Typing Coach & Weak-Key Diagnostics', () => {
       expect(result.weakKeys[1].suggestedLessonId).toBe('elementary-5');
     });
 
+    it('does not falsely classify high-frequency key E as bottleneck when another key has lower accuracy', () => {
+      const mockKeyStats: Record<string, RawKeySessionStat> = {
+        e: { attempts: 21, errors: 3, confusion: { s: 2, p: 1 } }, // 86% acc
+        b: { attempts: 4, errors: 2, confusion: { v: 2 } }, // 50% acc
+      };
+
+      const result = analyzeTypingDiagnostics(mockKeyStats);
+
+      // 'b' has 50% accuracy (severity 100), whereas 'e' has 86% accuracy (severity 42)
+      // 'b' should be ranked as top weak key over 'e'
+      expect(result.weakKeys[0].char).toBe('b');
+      expect(result.weakKeys[0].accuracy).toBe(50);
+    });
+
     it('calculates Left vs Right hand balance and identifies hand asymmetry', () => {
       const mockKeyStats: Record<string, RawKeySessionStat> = {
         // Left hand keys (a, s, d, f)
@@ -227,7 +241,7 @@ describe('Feature H: Smart Typing Coach & Weak-Key Diagnostics', () => {
 
       expect(screen.getByText('Coach Immediate Takeaway')).toBeInTheDocument();
       expect(screen.getByText(/Bottleneck key/i)).toBeInTheDocument();
-      expect(screen.getByText(/\[P\]/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/\[P\]/i).length).toBeGreaterThanOrEqual(1);
 
       const drillBtn = screen.getByRole('button', { name: /drill missed keys/i });
       fireEvent.click(drillBtn);

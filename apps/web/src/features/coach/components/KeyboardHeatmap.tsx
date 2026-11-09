@@ -269,8 +269,8 @@ export const KeyboardHeatmap: React.FC<KeyboardHeatmapProps> = ({
         <div className="mt-5 rounded-2xl border border-cyan-500/30 bg-cyan-500/5 p-4 sm:p-5 backdrop-blur">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-cyan-400/50 bg-cyan-500/20 font-mono text-xl font-black text-cyan-300 shadow-neon-cyan">
-                {inspectedKey.display}
+              <span className="flex h-12 min-w-[48px] px-3 items-center justify-center rounded-xl border border-cyan-400/50 bg-cyan-500/20 font-mono text-lg font-black text-cyan-300 shadow-neon-cyan whitespace-nowrap">
+                {inspectedKey.char === ' ' ? '␣ Space' : inspectedKey.display}
               </span>
               <div>
                 <div className="flex items-center gap-2">

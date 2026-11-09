@@ -35,24 +35,24 @@ describe('Header Component', () => {
     }
   });
 
-  it('renders KeySmasher brand logo and primary navigation links including Dashboard without signin', () => {
+  it('renders KeySmasher brand logo and Quick Test option on navbar without signin', () => {
     render(<TestShell />);
 
     // Brand name
     expect(screen.getByText(/KEY/i)).toBeInTheDocument();
     expect(screen.getByText(/SMASHER/i)).toBeInTheDocument();
 
-    // Primary navigation items including Dashboard for guests
-    expect(screen.getByRole('link', { name: /Learn/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Practice/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Compete/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Dashboard/i })).toBeInTheDocument();
+    // Without login, Quick Test is visible on the navbar near sign in
+    expect(screen.getAllByRole('link', { name: /Quick Test/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByRole('link', { name: /Learn/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Compete/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Dashboard/i })).not.toBeInTheDocument();
 
     // Sign in button is visible
     expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument();
   });
 
-  it('opens AuthModal and reveals user profile when signed in via Demo account', async () => {
+  it('opens AuthModal and reveals user profile with full navbar options when signed in', async () => {
     render(<TestShell />);
 
     const signInBtn = screen.getByRole('button', { name: /Sign In/i });
@@ -70,6 +70,12 @@ describe('Header Component', () => {
     expect(screen.getByText(/Speed Demon/i)).toBeInTheDocument();
     expect(screen.getAllByText(/DEMO/i).length).toBeGreaterThanOrEqual(1);
 
+    // Full navigation items are now revealed after login
+    expect(screen.getByRole('link', { name: /Learn/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Practice/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Compete/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Dashboard/i }).length).toBeGreaterThanOrEqual(1);
+
     // Sign Out button is accessible
     const signOutBtn = screen.getByRole('button', { name: /Sign Out/i });
     expect(signOutBtn).toBeInTheDocument();
@@ -78,8 +84,11 @@ describe('Header Component', () => {
       fireEvent.click(signOutBtn);
     });
 
-    // Reverts to guest mode, sign in button restored, Dashboard still in navbar
+    // Reverts to guest mode, Quick Test remains on navbar near sign in, others hidden
     expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Dashboard/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Quick Test/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByRole('link', { name: /Learn/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Compete/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Dashboard/i })).not.toBeInTheDocument();
   });
 });

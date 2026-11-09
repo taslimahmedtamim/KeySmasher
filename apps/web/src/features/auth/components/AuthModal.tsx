@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '../AuthContext';
-import { X, Lock, Mail, User, Sparkles, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, Lock, Mail, User, Sparkles, ArrowRight, AlertCircle, CheckCircle2, Zap } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
   const {
@@ -130,7 +131,7 @@ export const AuthModal: React.FC = () => {
                 setMode('signin');
                 setErrorMsg('');
               }}
-              className={`rounded-lg py-1.5 transition-all ${
+              className={`rounded-lg py-1.5 transition-colors duration-150 ${
                 mode === 'signin'
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow-neon-cyan'
                   : 'text-slate-400 hover:text-white'
@@ -144,7 +145,7 @@ export const AuthModal: React.FC = () => {
                 setMode('signup');
                 setErrorMsg('');
               }}
-              className={`rounded-lg py-1.5 transition-all ${
+              className={`rounded-lg py-1.5 transition-colors duration-150 ${
                 mode === 'signup'
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow-neon-cyan'
                   : 'text-slate-400 hover:text-white'
@@ -222,7 +223,7 @@ export const AuthModal: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full !mt-3 flex items-center justify-center gap-2 rounded-xl bg-cyan-500 py-2 text-xs font-bold text-slate-950 transition-all hover:bg-cyan-400 hover:shadow-neon-cyan disabled:opacity-50 active:scale-95"
+              className="w-full !mt-3 flex items-center justify-center gap-2 rounded-xl bg-cyan-500 py-2 text-xs font-bold text-slate-950 transition-colors duration-150 hover:bg-cyan-400 hover:shadow-neon-cyan disabled:opacity-50 active:scale-95"
             >
               <span>{mode === 'signin' ? 'Sign In to Account' : 'Create Account'}</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -242,11 +243,22 @@ export const AuthModal: React.FC = () => {
             type="button"
             onClick={handleDemoLogin}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-purple-500/40 bg-purple-500/10 py-2 text-xs font-bold text-purple-300 transition-all hover:bg-purple-500/20 hover:border-purple-500 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)] active:scale-95"
+            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-purple-500/40 bg-purple-500/10 py-2 text-xs font-bold text-purple-300 transition-colors duration-150 hover:bg-purple-500/20 hover:border-purple-500 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)] active:scale-95"
           >
             <Sparkles className="h-3.5 w-3.5 text-purple-400" />
             <span>Quick Demo Account (1-Click Login)</span>
           </button>
+
+          {/* Quick Test Without Sign In */}
+          <Link
+            href="/practice"
+            prefetch={true}
+            onClick={closeAuthModal}
+            className="w-full !mt-2 flex items-center justify-center gap-1.5 rounded-xl border border-surface-border bg-surface-muted py-2 text-xs font-semibold text-slate-300 transition-colors duration-150 hover:bg-surface hover:text-white active:scale-95"
+          >
+            <Zap className="h-3.5 w-3.5 text-cyan-400" />
+            <span>Quick Test (No Account Needed)</span>
+          </Link>
         </div>
       </div>
     </div>

@@ -24,6 +24,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#090d16',
+  colorScheme: 'dark',
 };
 
 export default function RootLayout({
@@ -32,11 +34,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html
+      lang="en"
+      className="dark"
+      style={{ colorScheme: 'dark', backgroundColor: '#090d16' }}
+    >
       <head>
         <link rel="icon" href="/logo.png" />
+        <meta name="theme-color" content="#090d16" />
+        <meta name="color-scheme" content="dark" />
       </head>
-      <body className="flex min-h-screen flex-col bg-background font-sans text-slate-100">
+      <body
+        style={{ colorScheme: 'dark', backgroundColor: '#090d16' }}
+        className="flex min-h-screen flex-col bg-background font-sans text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200"
+      >
         <AppProviders>
           <Header />
           <main className="flex-1">{children}</main>

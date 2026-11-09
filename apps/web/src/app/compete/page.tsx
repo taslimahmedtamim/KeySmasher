@@ -5,7 +5,7 @@ import { Swords, Plus, Key, Trophy, Users, ShieldAlert, Radio } from 'lucide-rea
 
 export default function CompetePage() {
   return (
-    <div className="py-10">
+    <div className="pt-6 pb-28 sm:pt-8 sm:pb-36">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-surface-border pb-6">

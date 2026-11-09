@@ -1,21 +1,58 @@
+/* Hard root background lock outside any cascade layer to guarantee zero white canvas flash */
+:root,
+html,
+body {
+  background-color: #090d16 !important;
+  color-scheme: dark !important;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    color-scheme: dark;
+    background-color: #090d16;
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
   }
 
+  html {
+    color-scheme: dark;
+    background-color: #090d16;
+    min-height: 100%;
+  }
+
   body {
-    @apply bg-background text-slate-100 antialiased min-h-screen selection:bg-cyan-500/30 selection:text-cyan-200;
+    background-color: #090d16;
+    color: #f1f5f9;
+    min-height: 100vh;
+    @apply antialiased selection:bg-cyan-500/30 selection:text-cyan-200;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Accessible focus indicators for keyboard navigation */
+  /* Universal prevention of tap highlight, click outline, and white flashing artifacts */
+  *, *::before, *::after {
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  /* Universal outline and shadow reset on all clicks and focus states */
+  *:focus,
+  *:active,
   *:focus-visible {
-    @apply outline-none ring-2 ring-cyan-400 ring-offset-2 ring-offset-background;
+    outline: none !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  button, a, input, select, textarea {
+    -webkit-tap-highlight-color: transparent !important;
+    user-select: none;
+  }
+
+  input, textarea {
+    user-select: text;
   }
 }
 
@@ -47,4 +84,32 @@
 
 .animate-pulse-subtle {
   animation: pulse-subtle 4s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 150ms ease-out forwards;
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 150ms ease-out forwards;
 }

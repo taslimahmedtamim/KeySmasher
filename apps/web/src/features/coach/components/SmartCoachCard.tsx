@@ -284,7 +284,7 @@ export const SmartCoachCard: React.FC<SmartCoachCardProps> = ({ coach, className
                   <div className="text-xs">
                     <span className="font-bold">Zero Critical Weak Keys!</span>
                     <p className="text-[10px] text-emerald-400/80">
-                      All tested keys are executing with above 96% precision.
+                      All tested keys are executing with above 85% precision.
                     </p>
                   </div>
                 </div>

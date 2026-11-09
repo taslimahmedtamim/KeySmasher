@@ -642,3 +642,21 @@ export function getFingerForKey(char: string): KeyFingerGuide | null {
   const lower = char.toLowerCase();
   return KEYBOARD_FINGER_MAP[lower] || null;
 }
+
+/**
+ * Returns all keys assigned to a specific finger ordered by row.
+ */
+export function getKeysForFinger(finger: FingerName): KeyFingerGuide[] {
+  const rowOrder: Record<string, number> = { number: 0, top: 1, home: 2, bottom: 3, space: 4 };
+  const seen = new Set<string>();
+  const list: KeyFingerGuide[] = [];
+
+  for (const guide of Object.values(KEYBOARD_FINGER_MAP)) {
+    if (guide.finger === finger && !seen.has(guide.char)) {
+      seen.add(guide.char);
+      list.push(guide);
+    }
+  }
+
+  return list.sort((a, b) => (rowOrder[a.row] ?? 9) - (rowOrder[b.row] ?? 9));
+}

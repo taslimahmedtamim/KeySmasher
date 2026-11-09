@@ -29,23 +29,34 @@ export interface TypingMetricsResult {
  * Formulas:
  * - Elapsed Minutes: elapsedSeconds / 60
  * - Raw WPM: (totalTypedCharacters / 5) / elapsedMinutes
- * - Net WPM: Math.max(0, ((totalTypedCharacters / 5) - incorrectCharacters) / elapsedMinutes)
+ * - Net WPM: (correctCharacters / 5) / elapsedMinutes
  * - Accuracy: (correctCharacters / totalTypedCharacters) * 100
  * - CPM (Characters Per Minute): totalTypedCharacters / elapsedMinutes
  */
 export function calculateTypingMetrics(input: TypingMetricsInput): TypingMetricsResult {
   const { totalTypedCharacters, correctCharacters, incorrectCharacters, elapsedSeconds } = input;
 
-  if (elapsedSeconds <= 0 || totalTypedCharacters <= 0) {
+  if (elapsedSeconds <= 0 || totalTypedCharacters <= 0 || correctCharacters <= 0) {
+    const elapsedMinutes = elapsedSeconds > 0 ? elapsedSeconds / 60 : 0;
+    const rawWpm = elapsedMinutes > 0 && totalTypedCharacters > 0
+      ? Math.round(((totalTypedCharacters / STANDARD_WORD_LENGTH) / elapsedMinutes) * 100) / 100
+      : 0;
+    const accuracy = totalTypedCharacters > 0
+      ? Math.round(((correctCharacters / totalTypedCharacters) * 100) * 100) / 100
+      : (elapsedSeconds <= 0 ? 100 : 0);
+    const cpm = elapsedMinutes > 0
+      ? Math.round((totalTypedCharacters / elapsedMinutes) * 100) / 100
+      : 0;
+
     return {
-      rawWpm: 0,
+      rawWpm,
       netWpm: 0,
-      accuracy: 100,
-      cpm: 0,
-      elapsedSeconds: Math.max(0, elapsedSeconds),
-      correctCharacters: 0,
-      incorrectCharacters: 0,
-      totalTypedCharacters: 0,
+      accuracy: Math.min(100, Math.max(0, accuracy)),
+      cpm,
+      elapsedSeconds: Math.round(Math.max(0, elapsedSeconds) * 100) / 100,
+      correctCharacters: Math.max(0, correctCharacters),
+      incorrectCharacters: Math.max(0, incorrectCharacters),
+      totalTypedCharacters: Math.max(0, totalTypedCharacters),
     };
   }
 
@@ -54,8 +65,8 @@ export function calculateTypingMetrics(input: TypingMetricsInput): TypingMetrics
   // Raw WPM: all typed characters divided by 5 per standard word, normalized by elapsed minutes
   const rawWpm = Math.round(((totalTypedCharacters / STANDARD_WORD_LENGTH) / elapsedMinutes) * 100) / 100;
 
-  // Net WPM: subtract uncorrected/incorrect characters from words count
-  const netWords = (totalTypedCharacters / STANDARD_WORD_LENGTH) - incorrectCharacters;
+  // Net WPM: standard touch-typing & Monkeytype specification: (correct characters / 5) / elapsed minutes
+  const netWords = correctCharacters / STANDARD_WORD_LENGTH;
   const netWpm = Math.max(0, Math.round((netWords / elapsedMinutes) * 100) / 100);
 
   // Accuracy: ratio of correct characters to all typed characters

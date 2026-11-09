@@ -187,8 +187,8 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
     <div
       ref={containerRef}
       onClick={handleContainerClick}
-      className={`relative max-h-[170px] overflow-hidden cursor-text font-mono text-xl sm:text-2xl leading-[2.2] tracking-wider select-none text-left focus:outline-none ${className}`}
-      tabIndex={0}
+      className={`relative max-h-[170px] overflow-hidden cursor-text font-mono text-xl sm:text-2xl leading-[2.2] tracking-wider select-none text-left outline-none focus:outline-none ${className}`}
+      tabIndex={-1}
       role="region"
       aria-label="Typing passage input area"
     >
@@ -199,7 +199,7 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
         onKeyDown={handleKeyDownInternal}
         onChange={onInputChange}
         onPaste={onPaste}
-        className="opacity-0 absolute inset-0 -z-10 w-full h-full cursor-text"
+        className="opacity-0 absolute inset-0 -z-10 w-full h-full cursor-text bg-transparent border-0 outline-none ring-0 shadow-none caret-transparent focus:outline-none focus:ring-0 focus:border-0"
         autoCapitalize="off"
         autoComplete="off"
         autoCorrect="off"

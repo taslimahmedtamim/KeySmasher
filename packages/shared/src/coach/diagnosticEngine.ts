@@ -198,47 +198,55 @@ export function analyzeTypingDiagnostics(
       : summary?.avgAccuracy ?? 100;
 
   // Rank Weak Keys:
-  // Keys with at least 2 attempts and accuracy < 96%
+  // Precision filtering: only candidate keys with meaningful inaccuracy (accuracy < 85% or error rate >= 15%)
   const candidateWeakKeys: WeakKeyDiagnostic[] = [];
 
   for (const [char, stat] of Object.entries(keyAccuracyMap)) {
-    // Only analyze alphanumeric and standard punctuation keys
-    if (stat.attempts < 2) continue;
+    // Only analyze alphanumeric and standard punctuation keys with actual errors
+    if (stat.attempts < 1 || stat.errors <= 0) continue;
 
     const errorRate = Math.round((stat.errors / stat.attempts) * 100);
-    if (stat.accuracy < 96 || stat.errors > 0) {
-      const guide = getFingerForKey(char);
-      const lessonRef = KEY_TO_LESSON_MAP[char.toLowerCase()];
+    // Meaningful weakness criteria:
+    // A key is only a bottleneck candidate if accuracy is below 85% (or 2+ errors with accuracy < 90%)
+    const isWeak = stat.accuracy < 85 || errorRate >= 15 || (stat.errors >= 2 && stat.accuracy < 90);
+    if (!isWeak) continue;
 
-      // Top common mistakes
-      const mistakesSorted = Object.entries(stat.confusion)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 2)
-        .map(([c]) => c.toUpperCase());
+    const guide = getFingerForKey(char);
+    const lessonRef = KEY_TO_LESSON_MAP[char.toLowerCase()];
 
-      candidateWeakKeys.push({
-        char,
-        display: char === ' ' ? '␣ Space' : char.toUpperCase(),
-        attempts: stat.attempts,
-        errors: stat.errors,
-        accuracy: stat.accuracy,
-        errorRate,
-        finger: stat.finger,
-        hand: stat.hand,
-        instruction: guide?.instruction || `Pressed with ${FINGER_NAMES[stat.finger].label}`,
-        commonMistakes: mistakesSorted,
-        suggestedLessonId: lessonRef?.lessonId,
-        suggestedLessonTitle: lessonRef?.lessonTitle,
-      });
-    }
+    // Top common mistakes
+    const mistakesSorted = Object.entries(stat.confusion)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(([c]) => c.toUpperCase());
+
+    candidateWeakKeys.push({
+      char,
+      display: char === ' ' ? '␣ Space' : char.toUpperCase(),
+      attempts: stat.attempts,
+      errors: stat.errors,
+      accuracy: stat.accuracy,
+      errorRate,
+      finger: stat.finger,
+      hand: stat.hand,
+      instruction: guide?.instruction || `Pressed with ${FINGER_NAMES[stat.finger].label}`,
+      commonMistakes: mistakesSorted,
+      suggestedLessonId: lessonRef?.lessonId,
+      suggestedLessonTitle: lessonRef?.lessonTitle,
+    });
   }
 
-  // Sort candidate weak keys by highest error count, then lowest accuracy
+  // Sort candidate weak keys by impact severity: (errors * errorRate), then lowest accuracy, then highest errors
   candidateWeakKeys.sort((a, b) => {
-    if (b.errors !== a.errors) {
-      return b.errors - a.errors;
+    const severityA = a.errors * (100 - a.accuracy);
+    const severityB = b.errors * (100 - b.accuracy);
+    if (severityB !== severityA) {
+      return severityB - severityA;
     }
-    return a.accuracy - b.accuracy;
+    if (a.accuracy !== b.accuracy) {
+      return a.accuracy - b.accuracy;
+    }
+    return b.errors - a.errors;
   });
 
   const weakKeys = candidateWeakKeys.slice(0, 5);

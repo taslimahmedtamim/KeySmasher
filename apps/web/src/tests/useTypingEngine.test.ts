@@ -296,5 +296,95 @@ describe('useTypingEngine', () => {
     expect(result.current.status).toBe('completed');
     expect(result.current.metrics.netWpm).toBe(completedWpm);
   });
+
+  it('reports 0 Net WPM and 0% accuracy when typing only wrong words', () => {
+    const { result } = renderHook(() =>
+      useTypingEngine({
+        initialConfig: {
+          initialPassage: 'the quick brown fox',
+        },
+      })
+    );
+
+    // Type completely wrong word 'xyz' and space
+    ['x', 'y', 'z', ' '].forEach((char) => {
+      act(() => {
+        result.current.actions.handleKeyDown({
+          key: char,
+          preventDefault: vi.fn(),
+        } as unknown as React.KeyboardEvent<HTMLInputElement>);
+      });
+    });
+
+    // Type another wrong word 'abc' and space
+    ['a', 'b', 'c', ' '].forEach((char) => {
+      act(() => {
+        result.current.actions.handleKeyDown({
+          key: char,
+          preventDefault: vi.fn(),
+        } as unknown as React.KeyboardEvent<HTMLInputElement>);
+      });
+    });
+
+    // Advance 5 seconds
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    // Net WPM and accuracy must be 0 when only wrong words are typed
+    expect(result.current.metrics.netWpm).toBe(0);
+    expect(result.current.metrics.accuracy).toBe(0);
+    expect(result.current.metrics.correctCharacters).toBe(0);
+    expect(result.current.metrics.incorrectCharacters).toBeGreaterThan(0);
+  });
+
+  it('should immediately award positive Net WPM when typing correct words even after typing wrong words', () => {
+    const { result } = renderHook(() =>
+      useTypingEngine({
+        initialConfig: {
+          initialPassage: 'first second third fourth fifth',
+          mode: 'time',
+          durationSeconds: 30,
+        },
+      })
+    );
+
+    // Type first word completely wrong: 'wrong '
+    'wrong '.split('').forEach((char) => {
+      act(() => {
+        result.current.actions.handleKeyDown({
+          key: char,
+          preventDefault: vi.fn(),
+        } as unknown as React.KeyboardEvent<HTMLInputElement>);
+      });
+    });
+
+    // Advance 2 seconds
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    // Still 0 WPM after only wrong word
+    expect(result.current.metrics.netWpm).toBe(0);
+
+    // Now type second word completely correctly: 'second '
+    'second '.split('').forEach((char) => {
+      act(() => {
+        result.current.actions.handleKeyDown({
+          key: char,
+          preventDefault: vi.fn(),
+        } as unknown as React.KeyboardEvent<HTMLInputElement>);
+      });
+    });
+
+    // Advance another 2 seconds (total 4 seconds)
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    // Net WPM must now be positive because 'second ' was typed correctly
+    expect(result.current.metrics.correctCharacters).toBe(7); // 'second' (6) + ' ' (1)
+    expect(result.current.metrics.netWpm).toBeGreaterThan(0);
+  });
 });
 

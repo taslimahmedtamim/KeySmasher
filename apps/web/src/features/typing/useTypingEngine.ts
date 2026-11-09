@@ -82,7 +82,11 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
     []
   );
 
-  // Initialize on mount or when configuration mode/difficulty changes
+  // Passage-defining parameters key: only regenerate passage when test mode or content settings change
+  // Sound theme, volume, or paste toggles must NEVER alter or wipe the passage text!
+  const passageDepsKey = `${config.mode}-${config.difficulty}-${config.durationSeconds}-${config.targetWordCount}-${config.quoteLength || ''}-${config.includePunctuation}-${config.includeNumbers}-${config.customText || ''}-${config.initialPassage || ''}`;
+
+  // Initialize on mount or when passage configuration changes
   useEffect(() => {
     const newPassage = initializePassage(config);
     setPassage(newPassage);
@@ -96,7 +100,8 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
     startTimeRef.current = null;
     lastRecordedSecondRef.current = 0;
     keyStatsRef.current = {};
-  }, [config, initializePassage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [passageDepsKey, initializePassage]);
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -125,34 +130,69 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       const expWord = expectedWords[w] || '';
       const actWord = w === currentWordIndex ? currentInput : typedWords[w] || '';
       const isPastWord = w < currentWordIndex;
+      const isCurrentWord = w === currentWordIndex;
 
-      const minLen = Math.min(expWord.length, actWord.length);
-      for (let c = 0; c < minLen; c++) {
-        totalTyped++;
-        if (expWord[c] === actWord[c]) {
-          correct++;
+      if (!isPastWord && !isCurrentWord) continue;
+
+      if (isPastWord) {
+        const isWordFullyCorrect = actWord === expWord;
+        if (isWordFullyCorrect) {
+          correct += expWord.length;
+          totalTyped += expWord.length;
+          // Add space between words (not after the final word)
+          if (w < expectedWords.length - 1) {
+            totalTyped++; // the space key
+            correct++; // word was submitted with space
+          }
         } else {
+          // Word was submitted with errors or incomplete: characters do not award speed
+          totalTyped += actWord.length;
+          if (w < expectedWords.length - 1) {
+            totalTyped++; // the space key
+          }
+
+          const minLen = Math.min(expWord.length, actWord.length);
+          for (let c = 0; c < minLen; c++) {
+            if (expWord[c] !== actWord[c]) {
+              incorrect++;
+            }
+          }
+
+          if (actWord.length > expWord.length) {
+            const extraCount = actWord.length - expWord.length;
+            extra += extraCount;
+            incorrect += extraCount;
+          }
+
+          if (actWord.length < expWord.length) {
+            const missedCount = expWord.length - actWord.length;
+            missed += missedCount;
+            incorrect += missedCount;
+          }
+
+          // Space key submitted after an erroneous word is an uncorrected error
           incorrect++;
         }
-      }
+      } else if (isCurrentWord) {
+        // Actively typing current word
+        const minLen = Math.min(expWord.length, actWord.length);
+        let hasErrorSoFar = false;
+        for (let c = 0; c < minLen; c++) {
+          totalTyped++;
+          if (expWord[c] === actWord[c] && !hasErrorSoFar) {
+            correct++;
+          } else {
+            hasErrorSoFar = true;
+            incorrect++;
+          }
+        }
 
-      // Extra characters typed beyond word length
-      if (actWord.length > expWord.length) {
-        const extraCount = actWord.length - expWord.length;
-        extra += extraCount;
-        incorrect += extraCount;
-        totalTyped += extraCount;
-      }
-
-      // Missed characters in previously completed words
-      if (isPastWord && actWord.length < expWord.length) {
-        missed += expWord.length - actWord.length;
-      }
-
-      // Add space for past words between words (not after the final word)
-      if (isPastWord && w < expectedWords.length - 1) {
-        totalTyped++; // the space key
-        correct++; // word was submitted with space
+        if (actWord.length > expWord.length) {
+          const extraCount = actWord.length - expWord.length;
+          extra += extraCount;
+          incorrect += extraCount;
+          totalTyped += extraCount;
+        }
       }
     }
 

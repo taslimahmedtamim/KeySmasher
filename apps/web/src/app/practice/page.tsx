@@ -94,6 +94,82 @@ export default function PracticePage() {
     }
   }, [setConfig]);
 
+  // Guarantee instant auto-focus on load, mode switch, and global keydown (no need to click box)
+  useEffect(() => {
+    const focusHiddenInput = () => {
+      if (
+        status !== 'completed' &&
+        !isCustomModalOpen &&
+        !isCertificateOpen &&
+        inputRef.current
+      ) {
+        inputRef.current.focus({ preventScroll: true });
+      }
+    };
+
+    // Auto-focus immediately on mount and after render tick
+    focusHiddenInput();
+    const timer = setTimeout(focusHiddenInput, 60);
+
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Do not steal focus if clicking buttons, links, or inputs in modals
+      if (
+        !target.closest('button') &&
+        !target.closest('a') &&
+        !target.closest('input') &&
+        !target.closest('textarea') &&
+        status !== 'completed' &&
+        !isCustomModalOpen &&
+        !isCertificateOpen
+      ) {
+        focusHiddenInput();
+      }
+    };
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (status === 'completed' || isCustomModalOpen || isCertificateOpen) return;
+
+      const active = document.activeElement;
+      if (
+        active &&
+        (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA') &&
+        active !== inputRef.current
+      ) {
+        return; // user is typing in another input field
+      }
+
+      // If hidden input is not focused and user presses any typing key, focus and forward it
+      if (document.activeElement !== inputRef.current) {
+        focusHiddenInput();
+        if (
+          (e.key.length === 1 || e.key === ' ' || e.key === 'Backspace') &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey
+        ) {
+          handleKeyDown(e as unknown as React.KeyboardEvent<HTMLInputElement>);
+        }
+      }
+    };
+
+    window.addEventListener('click', handleGlobalClick);
+    window.addEventListener('keydown', handleGlobalKeyDown);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('click', handleGlobalClick);
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, [status, isCustomModalOpen, isCertificateOpen, inputRef, handleKeyDown]);
+
+  // Auto-scroll to top when test finishes so headline results and coach takeaway are immediately visible
+  useEffect(() => {
+    if (status === 'completed') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [status]);
+
   // Save completed session to local history
   useEffect(() => {
     if (status === 'completed' && metrics.elapsedSeconds > 0) {
@@ -211,11 +287,17 @@ export default function PracticePage() {
     setSessionHistory([]);
   };
 
+  const handleRestart = (newPassage: boolean) => {
+    restart(newPassage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 20);
+  };
+
   const isCompleted = status === 'completed';
   const sessionStats = getSessionStats(sessionHistory);
 
   return (
-    <div className="py-8 md:py-12">
+    <div className="pt-6 pb-28 sm:pt-8 sm:pb-36">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         {/* Controls Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-surface-border bg-surface/80 p-3.5 backdrop-blur shadow-sm">
@@ -225,7 +307,7 @@ export default function PracticePage() {
               type="button"
               id="practice-mode-time"
               onClick={() => handleModeChange('time')}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors duration-150 ${
                 config.mode === 'time'
                   ? 'bg-cyan-500 text-slate-950 shadow-sm'
                   : 'text-slate-400 hover:text-white'
@@ -238,7 +320,7 @@ export default function PracticePage() {
               type="button"
               id="practice-mode-words"
               onClick={() => handleModeChange('words')}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors duration-150 ${
                 config.mode === 'words'
                   ? 'bg-cyan-500 text-slate-950 shadow-sm'
                   : 'text-slate-400 hover:text-white'
@@ -251,7 +333,7 @@ export default function PracticePage() {
               type="button"
               id="practice-mode-quote"
               onClick={() => handleModeChange('quote')}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors duration-150 ${
                 config.mode === 'quote'
                   ? 'bg-cyan-500 text-slate-950 shadow-sm'
                   : 'text-slate-400 hover:text-white'
@@ -264,7 +346,7 @@ export default function PracticePage() {
               type="button"
               id="practice-mode-custom"
               onClick={() => handleModeChange('custom')}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors duration-150 ${
                 config.mode === 'custom'
                   ? 'bg-cyan-500 text-slate-950 shadow-sm'
                   : 'text-slate-400 hover:text-white'
@@ -284,7 +366,7 @@ export default function PracticePage() {
                     key={d}
                     type="button"
                     onClick={() => handleDurationChange(d)}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors duration-150 ${
                       config.durationSeconds === d
                         ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
                         : 'text-slate-400 hover:text-white'
@@ -303,7 +385,7 @@ export default function PracticePage() {
                     key={w}
                     type="button"
                     onClick={() => handleWordCountChange(w)}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors duration-150 ${
                       config.targetWordCount === w
                         ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
                         : 'text-slate-400 hover:text-white'
@@ -322,7 +404,7 @@ export default function PracticePage() {
                     key={len}
                     type="button"
                     onClick={() => handleQuoteLengthChange(len)}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-medium capitalize transition-all ${
+                    className={`rounded-lg px-2.5 py-1 text-xs font-medium capitalize transition-colors duration-150 ${
                       (config.quoteLength || 'medium') === len
                         ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-400'
                         : 'text-slate-400 hover:text-white'
@@ -338,7 +420,7 @@ export default function PracticePage() {
               <button
                 type="button"
                 onClick={() => setIsCustomModalOpen(true)}
-                className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 transition-all"
+                className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 transition-colors duration-150"
               >
                 Edit Text
               </button>
@@ -352,7 +434,7 @@ export default function PracticePage() {
               type="button"
               id="practice-toggle-punctuation"
               onClick={togglePunctuation}
-              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-colors duration-150 ${
                 config.includePunctuation
                   ? 'border border-amber-500/40 bg-amber-500/10 text-amber-300'
                   : 'text-slate-400 hover:text-white'
@@ -368,7 +450,7 @@ export default function PracticePage() {
               type="button"
               id="practice-toggle-numbers"
               onClick={toggleNumbers}
-              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-colors duration-150 ${
                 config.includeNumbers
                   ? 'border border-amber-500/40 bg-amber-500/10 text-amber-300'
                   : 'text-slate-400 hover:text-white'
@@ -384,7 +466,7 @@ export default function PracticePage() {
               type="button"
               id="practice-toggle-sound"
               onClick={cycleSoundTheme}
-              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-colors duration-150 ${
                 config.soundTheme && config.soundTheme !== 'off'
                   ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-300'
                   : 'text-slate-500 hover:text-slate-300'
@@ -410,7 +492,7 @@ export default function PracticePage() {
                       key={diff}
                       type="button"
                       onClick={() => handleDifficultyChange(diff)}
-                      className={`rounded-lg px-2 py-0.5 text-[11px] font-medium capitalize transition-all ${
+                      className={`rounded-lg px-2 py-0.5 text-[11px] font-medium capitalize transition-colors duration-150 ${
                         config.difficulty === diff
                           ? 'border border-purple-500/40 bg-purple-500/10 text-purple-300'
                           : 'text-slate-500 hover:text-slate-300'
@@ -430,19 +512,19 @@ export default function PracticePage() {
           <div className="flex items-center gap-6 sm:gap-8">
             <div className="w-24 shrink-0 text-left">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Raw WPM
+                Net WPM
               </div>
               <div className="text-3xl font-black text-cyan-400 font-mono tabular-nums">
-                {zenMode && status === 'active' ? '—' : Math.round(metrics.rawWpm)}
+                {zenMode && status === 'active' ? '—' : Math.round(metrics.netWpm)}
               </div>
             </div>
 
             <div className="w-24 shrink-0 text-left">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Net WPM
+                Raw WPM
               </div>
-              <div className="text-3xl font-black text-white font-mono tabular-nums">
-                {zenMode && status === 'active' ? '—' : Math.round(metrics.netWpm)}
+              <div className="text-3xl font-black text-slate-400 font-mono tabular-nums">
+                {zenMode && status === 'active' ? '—' : Math.round(metrics.rawWpm)}
               </div>
             </div>
 
@@ -472,7 +554,7 @@ export default function PracticePage() {
               type="button"
               id="practice-zen-toggle"
               onClick={() => setZenMode(!zenMode)}
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors duration-150 ${
                 zenMode
                   ? 'border-purple-500/40 bg-purple-950/30 text-purple-300'
                   : 'border-slate-700 bg-surface text-slate-400 hover:text-white'
@@ -486,8 +568,8 @@ export default function PracticePage() {
             <button
               type="button"
               id="practice-restart-btn"
-              onClick={() => restart(false)}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-surface px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-slate-500 hover:text-white active:scale-95"
+              onClick={() => handleRestart(false)}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-surface px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors duration-150 hover:border-slate-500 hover:text-white active:scale-95"
               title="Restart current passage (Tab + Enter or Escape)"
             >
               <RotateCcw className="h-3.5 w-3.5 text-cyan-400" />
@@ -497,8 +579,8 @@ export default function PracticePage() {
             <button
               type="button"
               id="practice-new-passage-btn"
-              onClick={() => restart(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-surface px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-slate-500 hover:text-white active:scale-95"
+              onClick={() => handleRestart(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-surface px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors duration-150 hover:border-slate-500 hover:text-white active:scale-95"
               title="Generate new passage"
             >
               <RefreshCw className="h-3.5 w-3.5 text-purple-400" />
@@ -530,6 +612,14 @@ export default function PracticePage() {
                   : 'Custom Test'}{' '}
                 • {config.difficulty} difficulty
               </p>
+
+              {/* Invalid test indicator when typing only wrong words (Monkeytype style) */}
+              {metrics.netWpm === 0 && metrics.totalTypedCharacters > 0 && (
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-300">
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-rose-400 animate-pulse" />
+                  <span>invalid (accuracy) • 0 WPM</span>
+                </div>
+              )}
 
               {/* Primary 4 Key Metrics */}
               <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 max-w-3xl mx-auto">
@@ -576,8 +666,10 @@ export default function PracticePage() {
                     <span className="text-rose-400 font-bold">{metrics.incorrectCharacters}</span>
                     <span className="text-slate-600"> / </span>
                     <span className="text-amber-400">{metrics.extraCharacters}</span>
+                    <span className="text-slate-600"> / </span>
+                    <span className="text-purple-400">{metrics.missedCharacters}</span>
                   </div>
-                  <div className="text-[9px] text-slate-500">ok / err / extra</div>
+                  <div className="text-[9px] text-slate-500">ok / err / extra / missed</div>
                 </div>
 
                 <div className="rounded-lg border border-surface-border bg-surface/60 p-2.5">
@@ -616,8 +708,8 @@ export default function PracticePage() {
                 <button
                   type="button"
                   id="results-next-btn"
-                  onClick={() => restart(true)}
-                  className="flex items-center gap-2 rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-400 transition-all shadow-neon-cyan active:scale-95"
+                  onClick={() => handleRestart(true)}
+                  className="flex items-center gap-2 rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 hover:bg-cyan-400 transition-colors duration-150 shadow-neon-cyan active:scale-95"
                 >
                   <RefreshCw className="h-4 w-4" />
                   <span>Next Test</span>
@@ -626,8 +718,8 @@ export default function PracticePage() {
                 <button
                   type="button"
                   id="results-retry-btn"
-                  onClick={() => restart(false)}
-                  className="flex items-center gap-2 rounded-xl border border-surface-border bg-surface px-5 py-2.5 text-sm font-semibold text-slate-200 hover:text-white transition-all active:scale-95"
+                  onClick={() => handleRestart(false)}
+                  className="flex items-center gap-2 rounded-xl border border-surface-border bg-surface px-5 py-2.5 text-sm font-semibold text-slate-200 hover:text-white transition-colors duration-150 active:scale-95"
                 >
                   <RotateCcw className="h-4 w-4" />
                   <span>Retry Same</span>
@@ -637,7 +729,7 @@ export default function PracticePage() {
                   type="button"
                   id="results-copy-btn"
                   onClick={handleCopySummary}
-                  className="flex items-center gap-2 rounded-xl border border-surface-border bg-surface-muted px-4 py-2.5 text-sm font-semibold text-slate-300 hover:text-white transition-all active:scale-95"
+                  className="flex items-center gap-2 rounded-xl border border-surface-border bg-surface-muted px-4 py-2.5 text-sm font-semibold text-slate-300 hover:text-white transition-colors duration-150 active:scale-95"
                   title="Copy formatted result summary to clipboard"
                 >
                   {copied ? (
@@ -657,7 +749,7 @@ export default function PracticePage() {
                   type="button"
                   id="results-certificate-btn"
                   onClick={() => setIsCertificateOpen(true)}
-                  className="flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-sm font-bold text-amber-300 hover:bg-amber-500/20 hover:border-amber-400 hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all active:scale-95"
+                  className="flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-sm font-bold text-amber-300 hover:bg-amber-500/20 hover:border-amber-400 hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-colors duration-150 active:scale-95"
                   title="Generate & Download Verified Speed Certificate"
                 >
                   <Award className="h-4 w-4 text-amber-400" />
