@@ -30,11 +30,108 @@ export const DEFAULT_CONFIG: TypingEngineConfig = {
   includePunctuation: false,
   includeNumbers: false,
   soundTheme: 'off',
+  soundVolume: 0.85,
 };
 
 export interface UseTypingEngineProps {
   initialConfig?: Partial<TypingEngineConfig>;
   onTestComplete?: (metrics: ExtendedTypingMetrics, history: WpmHistoryPoint[]) => void;
+}
+
+interface CharacterCounts {
+  correct: number;
+  incorrect: number;
+  extra: number;
+  missed: number;
+  totalTyped: number;
+}
+
+/**
+ * Compute live cumulative character accuracy counts across typed words and the active word buffer.
+ */
+function computeCharacterCounts(
+  expectedWords: string[],
+  typedWords: string[],
+  currentInput: string,
+  currentWordIndex: number
+): CharacterCounts {
+  let correct = 0;
+  let incorrect = 0;
+  let extra = 0;
+  let missed = 0;
+  let totalTyped = 0;
+
+  for (let w = 0; w < expectedWords.length; w++) {
+    const expWord = expectedWords[w] || '';
+    const actWord = w === currentWordIndex ? currentInput : typedWords[w] || '';
+    const isPastWord = w < currentWordIndex;
+    const isCurrentWord = w === currentWordIndex;
+
+    if (!isPastWord && !isCurrentWord) continue;
+
+    if (isPastWord) {
+      const isWordFullyCorrect = actWord === expWord;
+      if (isWordFullyCorrect) {
+        correct += expWord.length;
+        totalTyped += expWord.length;
+        // Add space between words (not after the final word)
+        if (w < expectedWords.length - 1) {
+          totalTyped++; // the space key
+          correct++; // word was submitted with space
+        }
+      } else {
+        // Word was submitted with errors or incomplete: characters do not award speed
+        totalTyped += actWord.length;
+        if (w < expectedWords.length - 1) {
+          totalTyped++; // the space key
+        }
+
+        const minLen = Math.min(expWord.length, actWord.length);
+        for (let c = 0; c < minLen; c++) {
+          if (expWord[c] !== actWord[c]) {
+            incorrect++;
+          }
+        }
+
+        if (actWord.length > expWord.length) {
+          const extraCount = actWord.length - expWord.length;
+          extra += extraCount;
+          incorrect += extraCount;
+        }
+
+        if (actWord.length < expWord.length) {
+          const missedCount = expWord.length - actWord.length;
+          missed += missedCount;
+          incorrect += missedCount;
+        }
+
+        // Space key submitted after an erroneous word is an uncorrected error
+        incorrect++;
+      }
+    } else if (isCurrentWord) {
+      // Actively typing current word
+      const minLen = Math.min(expWord.length, actWord.length);
+      let hasErrorSoFar = false;
+      for (let c = 0; c < minLen; c++) {
+        totalTyped++;
+        if (expWord[c] === actWord[c] && !hasErrorSoFar) {
+          correct++;
+        } else {
+          hasErrorSoFar = true;
+          incorrect++;
+        }
+      }
+
+      if (actWord.length > expWord.length) {
+        const extraCount = actWord.length - expWord.length;
+        extra += extraCount;
+        incorrect += extraCount;
+        totalTyped += extraCount;
+      }
+    }
+  }
+
+  return { correct, incorrect, extra, missed, totalTyped };
 }
 
 export function useTypingEngine(props: UseTypingEngineProps = {}) {
@@ -61,11 +158,34 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
   const keyStatsRef = useRef<
     Record<string, { attempts: number; errors: number; confusion: Record<string, number> }>
   >({});
+  const errorsInSecondRef = useRef<number>(0);
+  const keystrokesInSecondRef = useRef<number>(0);
+  const elapsedSecondsRef = useRef<number>(elapsedSeconds);
+  elapsedSecondsRef.current = elapsedSeconds;
+  const wpmHistoryRef = useRef<WpmHistoryPoint[]>([]);
+  wpmHistoryRef.current = wpmHistory;
+  const configRef = useRef<TypingEngineConfig>(config);
+  configRef.current = config;
+  const onTestCompleteRef = useRef(props.onTestComplete);
+  onTestCompleteRef.current = props.onTestComplete;
+  const typedWordsRef = useRef<string[]>(typedWords);
+  typedWordsRef.current = typedWords;
+  const currentInputRef = useRef<string>(currentInput);
+  currentInputRef.current = currentInput;
+  const currentWordIndexRef = useRef<number>(currentWordIndex);
+  currentWordIndexRef.current = currentWordIndex;
 
-  // Generate or load initial passage
+  const lastAppliedInitialPassageRef = useRef<string | undefined>(undefined);
+
+  // Generate or load initial passage (consumes initialPassage once so subsequent restarts/mode switches aren't locked)
   const initializePassage = useCallback(
-    (cfg: TypingEngineConfig): string => {
-      if (cfg.initialPassage) {
+    (cfg: TypingEngineConfig, forceGenerate: boolean = false): string => {
+      if (
+        !forceGenerate &&
+        cfg.initialPassage &&
+        cfg.initialPassage !== lastAppliedInitialPassageRef.current
+      ) {
+        lastAppliedInitialPassageRef.current = cfg.initialPassage;
         return cfg.initialPassage;
       }
       return generatePassage({
@@ -88,7 +208,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
 
   // Initialize on mount or when passage configuration changes
   useEffect(() => {
-    const newPassage = initializePassage(config);
+    const newPassage = initializePassage(config, false);
     setPassage(newPassage);
     const wordsCount = newPassage.split(/\s+/).length;
     setTypedWords(new Array(wordsCount).fill(''));
@@ -97,9 +217,12 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
     setStatus('idle');
     setElapsedSeconds(0);
     setWpmHistory([]);
+    wpmHistoryRef.current = [];
     startTimeRef.current = null;
     lastRecordedSecondRef.current = 0;
     keyStatsRef.current = {};
+    errorsInSecondRef.current = 0;
+    keystrokesInSecondRef.current = 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [passageDepsKey, initializePassage]);
 
@@ -117,87 +240,14 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
   const expectedWords = useMemo(() => {
     return passage.length > 0 ? passage.trim().split(/\s+/) : [];
   }, [passage]);
+  const expectedWordsRef = useRef<string[]>(expectedWords);
+  expectedWordsRef.current = expectedWords;
 
   // Calculate live cumulative character metrics
-  const characterCounts = useMemo(() => {
-    let correct = 0;
-    let incorrect = 0;
-    let extra = 0;
-    let missed = 0;
-    let totalTyped = 0;
-
-    for (let w = 0; w < expectedWords.length; w++) {
-      const expWord = expectedWords[w] || '';
-      const actWord = w === currentWordIndex ? currentInput : typedWords[w] || '';
-      const isPastWord = w < currentWordIndex;
-      const isCurrentWord = w === currentWordIndex;
-
-      if (!isPastWord && !isCurrentWord) continue;
-
-      if (isPastWord) {
-        const isWordFullyCorrect = actWord === expWord;
-        if (isWordFullyCorrect) {
-          correct += expWord.length;
-          totalTyped += expWord.length;
-          // Add space between words (not after the final word)
-          if (w < expectedWords.length - 1) {
-            totalTyped++; // the space key
-            correct++; // word was submitted with space
-          }
-        } else {
-          // Word was submitted with errors or incomplete: characters do not award speed
-          totalTyped += actWord.length;
-          if (w < expectedWords.length - 1) {
-            totalTyped++; // the space key
-          }
-
-          const minLen = Math.min(expWord.length, actWord.length);
-          for (let c = 0; c < minLen; c++) {
-            if (expWord[c] !== actWord[c]) {
-              incorrect++;
-            }
-          }
-
-          if (actWord.length > expWord.length) {
-            const extraCount = actWord.length - expWord.length;
-            extra += extraCount;
-            incorrect += extraCount;
-          }
-
-          if (actWord.length < expWord.length) {
-            const missedCount = expWord.length - actWord.length;
-            missed += missedCount;
-            incorrect += missedCount;
-          }
-
-          // Space key submitted after an erroneous word is an uncorrected error
-          incorrect++;
-        }
-      } else if (isCurrentWord) {
-        // Actively typing current word
-        const minLen = Math.min(expWord.length, actWord.length);
-        let hasErrorSoFar = false;
-        for (let c = 0; c < minLen; c++) {
-          totalTyped++;
-          if (expWord[c] === actWord[c] && !hasErrorSoFar) {
-            correct++;
-          } else {
-            hasErrorSoFar = true;
-            incorrect++;
-          }
-        }
-
-        if (actWord.length > expWord.length) {
-          const extraCount = actWord.length - expWord.length;
-          extra += extraCount;
-          incorrect += extraCount;
-          totalTyped += extraCount;
-        }
-      }
-    }
-
-    return { correct, incorrect, extra, missed, totalTyped };
-  }, [expectedWords, typedWords, currentInput, currentWordIndex]);
+  const characterCounts = useMemo(
+    () => computeCharacterCounts(expectedWords, typedWords, currentInput, currentWordIndex),
+    [expectedWords, typedWords, currentInput, currentWordIndex]
+  );
 
   // Deterministic metrics
   const metrics: ExtendedTypingMetrics = useMemo(() => {
@@ -227,32 +277,69 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
     };
   }, [characterCounts, elapsedSeconds, config, currentWordIndex, expectedWords.length, wpmHistory]);
 
-  // End / Complete test
-  const completeTest = useCallback(() => {
+  // End / Complete test (reads latest refs so timer callbacks never capture stale metrics/history)
+  const completeTest = useCallback((overrideElapsed?: number) => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    if (startTimeRef.current) {
-      const finalElapsed = Math.max(0.1, (Date.now() - startTimeRef.current) / 1000);
-      setElapsedSeconds(finalElapsed);
-      startTimeRef.current = null;
+
+    let finalElapsed = overrideElapsed ?? elapsedSecondsRef.current;
+    if (overrideElapsed === undefined && startTimeRef.current) {
+      finalElapsed = Math.max(0.1, (Date.now() - startTimeRef.current) / 1000);
     }
+    setElapsedSeconds(finalElapsed);
+    startTimeRef.current = null;
+
     statusRef.current = 'completed';
     setStatus('completed');
-    if (props.onTestComplete) {
-      props.onTestComplete(metrics, wpmHistory);
+
+    if (onTestCompleteRef.current) {
+      const latestCounts = computeCharacterCounts(
+        expectedWordsRef.current,
+        typedWordsRef.current,
+        currentInputRef.current,
+        currentWordIndexRef.current
+      );
+      const latestHistory = wpmHistoryRef.current;
+      const latestConfig = configRef.current;
+      const baseMetrics = calculateTypingMetrics({
+        totalTypedCharacters: latestCounts.totalTyped,
+        correctCharacters: latestCounts.correct,
+        incorrectCharacters: latestCounts.incorrect,
+        elapsedSeconds: finalElapsed,
+      });
+
+      const finalMetrics: ExtendedTypingMetrics = {
+        ...baseMetrics,
+        timeRemaining:
+          latestConfig.mode === 'time'
+            ? Math.max(0, Math.ceil(latestConfig.durationSeconds - finalElapsed))
+            : 0,
+        completedWordsCount: currentWordIndexRef.current,
+        totalWordsCount: expectedWordsRef.current.length,
+        missedCharacters: latestCounts.missed,
+        extraCharacters: latestCounts.extra,
+        consistency: calculateConsistency(latestHistory.map((p) => p.rawWpm)),
+        keyStats: { ...keyStatsRef.current },
+      };
+
+      onTestCompleteRef.current(finalMetrics, latestHistory);
     }
-  }, [metrics, props, wpmHistory]);
+  }, []);
 
   // Start test & timer (guaranteeing single interval)
   const startTest = useCallback(() => {
     if (statusRef.current === 'active') return;
 
+    statusRef.current = 'active';
     setStatus('active');
     const now = Date.now();
     startTimeRef.current = now;
     lastRecordedSecondRef.current = 0;
+    errorsInSecondRef.current = 0;
+    keystrokesInSecondRef.current = 0;
+    wpmHistoryRef.current = [];
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -263,40 +350,56 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       const currentNow = Date.now();
       const elapsed = (currentNow - startTimeRef.current) / 1000;
 
-      // Update UI elapsed seconds every full second to prevent frantic jumping
+      // Record per-second snapshots using live refs so closures never go stale
       const wholeSeconds = Math.floor(elapsed);
-      if (wholeSeconds !== lastRecordedSecondRef.current) {
+      if (wholeSeconds > lastRecordedSecondRef.current) {
+        const prevSecond = lastRecordedSecondRef.current;
+        const deltaSeconds = Math.max(1, wholeSeconds - prevSecond);
         lastRecordedSecondRef.current = wholeSeconds;
         setElapsedSeconds(wholeSeconds);
 
         if (wholeSeconds > 0) {
+          const liveCounts = computeCharacterCounts(
+            expectedWordsRef.current,
+            typedWordsRef.current,
+            currentInputRef.current,
+            currentWordIndexRef.current
+          );
           const snapshot = calculateTypingMetrics({
-            totalTypedCharacters: characterCounts.totalTyped,
-            correctCharacters: characterCounts.correct,
-            incorrectCharacters: characterCounts.incorrect,
+            totalTypedCharacters: liveCounts.totalTyped,
+            correctCharacters: liveCounts.correct,
+            incorrectCharacters: liveCounts.incorrect,
             elapsedSeconds: wholeSeconds,
           });
 
-          setWpmHistory((prev) => [
-            ...prev,
-            {
-              second: wholeSeconds,
-              rawWpm: snapshot.rawWpm,
-              netWpm: snapshot.netWpm,
-              accuracy: snapshot.accuracy,
-              errors: characterCounts.incorrect,
-            },
-          ]);
+          const errorsThisSecond = errorsInSecondRef.current;
+          errorsInSecondRef.current = 0;
+          const keystrokesThisSecond = keystrokesInSecondRef.current;
+          keystrokesInSecondRef.current = 0;
+          const burstWpm = Math.round(((keystrokesThisSecond / 5) / deltaSeconds) * 60);
+
+          const nextPoint: WpmHistoryPoint = {
+            second: wholeSeconds,
+            rawWpm: snapshot.rawWpm,
+            netWpm: snapshot.netWpm,
+            accuracy: snapshot.accuracy,
+            errors: errorsThisSecond,
+            burstWpm,
+          };
+
+          const updatedHistory = [...wpmHistoryRef.current, nextPoint];
+          wpmHistoryRef.current = updatedHistory;
+          setWpmHistory(updatedHistory);
         }
       }
 
       // Check time expiration in time mode
-      if (config.mode === 'time' && elapsed >= config.durationSeconds) {
-        setElapsedSeconds(config.durationSeconds);
-        completeTest();
+      const currentConfig = configRef.current;
+      if (currentConfig.mode === 'time' && elapsed >= currentConfig.durationSeconds) {
+        completeTest(currentConfig.durationSeconds);
       }
     }, 100);
-  }, [characterCounts, config.durationSeconds, config.mode, completeTest]);
+  }, [completeTest]);
 
   // Reset / Restart test
   const restart = useCallback(
@@ -308,18 +411,25 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       startTimeRef.current = null;
       lastRecordedSecondRef.current = 0;
 
-      const p = newPassage ? initializePassage(config) : passage;
+      const p = newPassage ? initializePassage(config, true) : passage;
       if (newPassage) {
         setPassage(p);
       }
       const wordsCount = p.split(/\s+/).length;
-      setTypedWords(new Array(wordsCount).fill(''));
+      const resetWords = new Array(wordsCount).fill('');
+      setTypedWords(resetWords);
       setCurrentWordIndex(0);
       setCurrentInput('');
       setStatus('idle');
       setElapsedSeconds(0);
       setWpmHistory([]);
+      wpmHistoryRef.current = [];
+      typedWordsRef.current = resetWords;
+      currentWordIndexRef.current = 0;
+      currentInputRef.current = '';
       keyStatsRef.current = {};
+      errorsInSecondRef.current = 0;
+      keystrokesInSecondRef.current = 0;
       inputRef.current?.focus();
     },
     [config, initializePassage, passage]
@@ -363,7 +473,8 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         e.preventDefault();
         if (currentInput.length === 0) return; // Don't advance on empty space
 
-        playKeystrokeSound(config.soundTheme, false);
+        playKeystrokeSound(config.soundTheme, false, 'space', config.soundVolume);
+        keystrokesInSecondRef.current += 1;
 
         // Record space attempt
         const spaceChar = ' ';
@@ -375,6 +486,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         const nextWords = [...typedWords];
         nextWords[currentWordIndex] = currentInput;
         setTypedWords(nextWords);
+        typedWordsRef.current = nextWords;
 
         const nextIndex = currentWordIndex + 1;
 
@@ -385,6 +497,8 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         ) {
           setCurrentWordIndex(nextIndex);
           setCurrentInput('');
+          currentWordIndexRef.current = nextIndex;
+          currentInputRef.current = '';
           completeTest();
           return;
         }
@@ -393,18 +507,22 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         if (nextIndex >= expectedWords.length) {
           setCurrentWordIndex(nextIndex);
           setCurrentInput('');
+          currentWordIndexRef.current = nextIndex;
+          currentInputRef.current = '';
           completeTest();
           return;
         }
 
         setCurrentWordIndex(nextIndex);
         setCurrentInput('');
+        currentWordIndexRef.current = nextIndex;
+        currentInputRef.current = '';
         return;
       }
 
       // Handle Backspace
       if (e.key === 'Backspace') {
-        playKeystrokeSound(config.soundTheme, false);
+        playKeystrokeSound(config.soundTheme, false, 'backspace', config.soundVolume);
         if (currentInput.length > 0) {
           // Delete character in current word
           setCurrentInput((prev) => prev.slice(0, -1));
@@ -426,11 +544,15 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
 
         if (isFinalWord && currentInput.length > 0) {
           e.preventDefault();
+          playKeystrokeSound(config.soundTheme, false, 'enter', config.soundVolume);
           const nextWords = [...typedWords];
           nextWords[currentWordIndex] = currentInput;
           setTypedWords(nextWords);
           setCurrentWordIndex(currentWordIndex + 1);
           setCurrentInput('');
+          typedWordsRef.current = nextWords;
+          currentWordIndexRef.current = currentWordIndex + 1;
+          currentInputRef.current = '';
           completeTest();
           return;
         }
@@ -442,7 +564,11 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         const expectedWord = expectedWords[currentWordIndex] || '';
         const expectedChar = expectedWord[currentInput.length];
         const isError = expectedChar !== undefined ? expectedChar !== e.key : true;
-        playKeystrokeSound(config.soundTheme, isError);
+        playKeystrokeSound(config.soundTheme, isError, 'char', config.soundVolume);
+        keystrokesInSecondRef.current += 1;
+        if (isError) {
+          errorsInSecondRef.current += 1;
+        }
 
         // Record keystroke telemetry
         if (expectedChar) {
@@ -463,6 +589,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         if (currentInput.length < expectedWord.length + 12) {
           const updatedInput = currentInput + e.key;
           setCurrentInput(updatedInput);
+          currentInputRef.current = updatedInput;
 
           // Check if on final word of passage (or reached words target)
           const isFinalWord =
@@ -476,6 +603,9 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
             setTypedWords(nextWords);
             setCurrentWordIndex(currentWordIndex + 1);
             setCurrentInput('');
+            typedWordsRef.current = nextWords;
+            currentWordIndexRef.current = currentWordIndex + 1;
+            currentInputRef.current = '';
             completeTest();
             return;
           }

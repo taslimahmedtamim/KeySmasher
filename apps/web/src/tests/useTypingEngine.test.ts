@@ -386,5 +386,39 @@ describe('useTypingEngine', () => {
     expect(result.current.metrics.correctCharacters).toBe(7); // 'second' (6) + ' ' (1)
     expect(result.current.metrics.netWpm).toBeGreaterThan(0);
   });
+
+  it('generates fresh passage on restart(true) and mode switch even if initialPassage was provided', () => {
+    const { result } = renderHook(() =>
+      useTypingEngine({
+        initialConfig: {
+          mode: 'time',
+          durationSeconds: 30,
+          initialPassage: 'locked drill passage only',
+        },
+      })
+    );
+
+    expect(result.current.passage).toBe('locked drill passage only');
+
+    // Restart with newPassage = true should generate a fresh non-locked passage
+    act(() => {
+      result.current.actions.restart(true);
+    });
+
+    expect(result.current.passage).not.toBe('locked drill passage only');
+    expect(result.current.passage.split(/\s+/).length).toBeGreaterThan(10);
+
+    // Switching mode should also generate fresh mode passage without reverting to initialPassage
+    act(() => {
+      result.current.actions.setConfig((prev) => ({
+        ...prev,
+        mode: 'words',
+        targetWordCount: 10,
+      }));
+    });
+
+    expect(result.current.passage).not.toBe('locked drill passage only');
+    expect(result.current.passage.split(/\s+/).length).toBe(10);
+  });
 });
 

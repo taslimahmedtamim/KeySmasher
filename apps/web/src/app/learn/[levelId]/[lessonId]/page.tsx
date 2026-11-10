@@ -12,8 +12,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   BookOpen,
-  Volume2,
-  VolumeX,
   Layers,
   Hand,
   Keyboard,
@@ -26,6 +24,7 @@ import {
 } from '@keysmasher/shared';
 import { useTypingEngine } from '@/features/typing/useTypingEngine';
 import { TypingArea } from '@/features/typing/components/TypingArea';
+import { SoundSwitchSelector } from '@/features/typing/components/SoundSwitchSelector';
 import { UnifiedGuidanceConsole } from '@/features/academy/components/UnifiedGuidanceConsole';
 import { HandsVisualizer } from '@/features/academy/components/HandsVisualizer';
 import { VisualKeyboard } from '@/features/academy/components/VisualKeyboard';
@@ -34,7 +33,10 @@ import {
   getLessonProgress,
 } from '@/features/academy/utils/academyStorage';
 import { SoundTheme } from '@/features/typing/types';
-import { playKeystrokeSound } from '@/features/typing/utils/soundEffects';
+import {
+  loadStoredSoundSettings,
+  saveSoundSettings,
+} from '@/features/typing/utils/soundEffects';
 
 interface LessonPageProps {
   params: Promise<{ levelId: string; lessonId: string }>;
@@ -71,6 +73,18 @@ export default function LessonRunnerPage({ params }: LessonPageProps) {
     },
   });
 
+  // Restore saved switch sound & volume on mount
+  useEffect(() => {
+    const storedAudio = loadStoredSoundSettings();
+    if (storedAudio.theme !== null) {
+      setConfig((prev) => ({
+        ...prev,
+        soundTheme: storedAudio.theme ?? prev.soundTheme,
+        soundVolume: storedAudio.volume,
+      }));
+    }
+  }, [setConfig]);
+
   // Guarantee instant auto-focus on page load & refocus on click/keypress
   useEffect(() => {
     const focusHiddenInput = () => {
@@ -91,6 +105,7 @@ export default function LessonRunnerPage({ params }: LessonPageProps) {
         !target.closest('button') &&
         !target.closest('a') &&
         !target.closest('input') &&
+        !target.closest('[data-sound-picker="true"]') &&
         status !== 'completed'
       ) {
         focusHiddenInput();
@@ -189,21 +204,18 @@ export default function LessonRunnerPage({ params }: LessonPageProps) {
     );
   }
 
-  const cycleSoundTheme = () => {
-    const themes: SoundTheme[] = ['off', 'click', 'clack', 'thock'];
-    const currentIdx = themes.indexOf(config.soundTheme || 'off');
-    const nextTheme = themes[(currentIdx + 1) % themes.length];
-    setConfig((prev) => ({ ...prev, soundTheme: nextTheme }));
-    if (nextTheme !== 'off') {
-      playKeystrokeSound(nextTheme, false);
-    }
+  const handleSoundThemeChange = (nextTheme: SoundTheme) => {
+    setConfig((prev) => {
+      saveSoundSettings(nextTheme, prev.soundVolume ?? 0.85);
+      return { ...prev, soundTheme: nextTheme };
+    });
   };
 
   return (
     <div className="py-4 md:py-6">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         {/* Navigation Breadcrumb & Header Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-border pb-3">
+        <div className="relative z-40 flex flex-wrap items-center justify-between gap-3 border-b border-surface-border pb-3">
           <div className="flex items-center gap-3">
             <Link
               href="/learn"
@@ -217,23 +229,12 @@ export default function LessonRunnerPage({ params }: LessonPageProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={cycleSoundTheme}
-              className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-semibold transition-all ${
-                config.soundTheme && config.soundTheme !== 'off'
-                  ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300'
-                  : 'border-slate-800 text-slate-500'
-              }`}
-              title="Keystroke Audio Feedback"
-            >
-              {config.soundTheme && config.soundTheme !== 'off' ? (
-                <Volume2 className="h-3.5 w-3.5" />
-              ) : (
-                <VolumeX className="h-3.5 w-3.5" />
-              )}
-              <span className="capitalize">{config.soundTheme || 'Mute'}</span>
-            </button>
+            <SoundSwitchSelector
+              buttonId="lesson-toggle-sound"
+              value={config.soundTheme || 'off'}
+              volume={config.soundVolume ?? 0.85}
+              onChange={handleSoundThemeChange}
+            />
 
             <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-xs font-semibold text-purple-300">
               {course.title}

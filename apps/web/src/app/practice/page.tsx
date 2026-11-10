@@ -10,8 +10,6 @@ import {
   RotateCcw,
   RefreshCw,
   CheckCircle2,
-  Volume2,
-  VolumeX,
   Copy,
   Check,
   Flame,
@@ -20,24 +18,26 @@ import {
   Info,
   Eye,
   EyeOff,
-  Hash,
-  AtSign,
   TrendingUp,
   History,
   Trash2,
   Award,
+  Target,
+  X,
 } from 'lucide-react';
 import {
   PassageDifficulty,
   TestMode,
   TimeDurationOption,
   WordCountOption,
+  generateWeakKeyDrillPassage,
 } from '@keysmasher/shared';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useTypingEngine } from '@/features/typing/useTypingEngine';
 import { TypingArea } from '@/features/typing/components/TypingArea';
 import { WpmHistoryChart } from '@/features/typing/components/WpmHistoryChart';
 import { CustomTextModal } from '@/features/typing/components/CustomTextModal';
+import { SoundSwitchSelector } from '@/features/typing/components/SoundSwitchSelector';
 import { TypingCertificateModal } from '@/components/certificate/TypingCertificateModal';
 import {
   getStoredSessions,
@@ -47,7 +47,10 @@ import {
   SavedTestSession,
 } from '@/features/typing/utils/historyStorage';
 import { SoundTheme } from '@/features/typing/types';
-import { playKeystrokeSound } from '@/features/typing/utils/soundEffects';
+import {
+  loadStoredSoundSettings,
+  saveSoundSettings,
+} from '@/features/typing/utils/soundEffects';
 import { PostTestCoachTip } from '@/features/coach';
 
 export default function PracticePage() {
@@ -57,11 +60,14 @@ export default function PracticePage() {
   const [isCertificateOpen, setIsCertificateOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sessionHistory, setSessionHistory] = useState<SavedTestSession[]>([]);
+  const [activeDrillKeys, setActiveDrillKeys] = useState<string[] | null>(null);
+  const preDrillModeRef = useRef<TestMode>('time');
   const savedTestRef = useRef<string | null>(null);
 
   const {
     status,
     config,
+    passage,
     renderedWords,
     currentWordIndex,
     activeCharIndex,
@@ -71,20 +77,39 @@ export default function PracticePage() {
     actions: { restart, handleKeyDown, handleInputChange, handlePaste, setConfig },
   } = useTypingEngine();
 
-  // Load guest session history on mount and handle drill deep-linking
+  // Load guest session history & stored switch audio preference on mount, and handle drill deep-linking
   useEffect(() => {
     setSessionHistory(getStoredSessions());
+    const storedAudio = loadStoredSoundSettings();
+    if (storedAudio.theme !== null) {
+      setConfig((prev) => ({
+        ...prev,
+        soundTheme: storedAudio.theme ?? prev.soundTheme,
+        soundVolume: storedAudio.volume,
+      }));
+    }
     try {
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         if (params.get('drill') === 'weak-keys') {
           const stored = window.sessionStorage.getItem('keysmasher_drill_passage');
+          const storedKeysRaw = window.sessionStorage.getItem('keysmasher_drill_keys');
+          let parsedKeys: string[] = [];
+          if (storedKeysRaw) {
+            try {
+              const p = JSON.parse(storedKeysRaw);
+              if (Array.isArray(p)) parsedKeys = p.filter((k) => typeof k === 'string');
+            } catch {
+              // Ignore
+            }
+          }
           if (stored) {
+            setActiveDrillKeys(parsedKeys.length > 0 ? parsedKeys : ['e', 't', 'a']);
             setConfig((prev) => ({
               ...prev,
               mode: 'custom',
               customText: stored,
-              initialPassage: stored,
+              initialPassage: undefined,
             }));
           }
         }
@@ -119,6 +144,7 @@ export default function PracticePage() {
         !target.closest('a') &&
         !target.closest('input') &&
         !target.closest('textarea') &&
+        !target.closest('[data-sound-picker="true"]') &&
         status !== 'completed' &&
         !isCustomModalOpen &&
         !isCertificateOpen
@@ -202,65 +228,135 @@ export default function PracticePage() {
     config.targetWordCount,
   ]);
 
+  const clearDrillUrlAndStorage = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage?.removeItem('keysmasher_drill_passage');
+        window.sessionStorage?.removeItem('keysmasher_drill_keys');
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('drill')) {
+          params.delete('drill');
+          const nextQuery = params.toString();
+          const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}`;
+          window.history.replaceState({}, '', nextUrl);
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  };
+
   const handleModeChange = (newMode: TestMode) => {
     if (newMode === 'custom') {
       setIsCustomModalOpen(true);
     } else {
-      setConfig((prev) => ({ ...prev, mode: newMode }));
+      setActiveDrillKeys(null);
+      clearDrillUrlAndStorage();
+      setConfig((prev) => ({
+        ...prev,
+        mode: newMode,
+        customText: undefined,
+        initialPassage: undefined,
+      }));
     }
   };
 
   const handleCustomTextApply = (customText: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      mode: 'custom',
-      customText,
-      initialPassage: customText,
-    }));
+    if (config.mode !== 'custom') {
+      preDrillModeRef.current = config.mode;
+    }
+    setActiveDrillKeys(null);
+    clearDrillUrlAndStorage();
+    if (config.mode === 'custom' && customText.trim() === passage.trim()) {
+      restart(false);
+    } else {
+      setConfig((prev) => ({
+        ...prev,
+        mode: 'custom',
+        customText,
+        initialPassage: undefined,
+      }));
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 40);
   };
 
-  const handleApplyCoachDrill = (drillPassage: string) => {
+  const handleApplyCoachDrill = (drillPassage: string, targetKeys?: string[]) => {
+    if (config.mode !== 'custom') {
+      preDrillModeRef.current = config.mode;
+    }
+    const keysToSet = targetKeys && targetKeys.length > 0 ? targetKeys : null;
+    setActiveDrillKeys(keysToSet);
+    clearDrillUrlAndStorage();
+
+    if (config.mode === 'custom' && drillPassage.trim() === passage.trim()) {
+      restart(false);
+    } else {
+      setConfig((prev) => ({
+        ...prev,
+        mode: 'custom',
+        customText: drillPassage,
+        initialPassage: undefined,
+      }));
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 40);
+  };
+
+  const handleExitDrill = () => {
+    const restoreMode =
+      preDrillModeRef.current && preDrillModeRef.current !== 'custom'
+        ? preDrillModeRef.current
+        : 'time';
+    setActiveDrillKeys(null);
+    clearDrillUrlAndStorage();
     setConfig((prev) => ({
       ...prev,
-      mode: 'custom',
-      customText: drillPassage,
-      initialPassage: drillPassage,
+      mode: restoreMode,
+      customText: undefined,
+      initialPassage: undefined,
     }));
-    restart(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 40);
   };
 
   const handleDurationChange = (d: TimeDurationOption) => {
-    setConfig((prev) => ({ ...prev, durationSeconds: d }));
+    setConfig((prev) => ({ ...prev, durationSeconds: d, initialPassage: undefined }));
   };
 
   const handleWordCountChange = (w: WordCountOption) => {
-    setConfig((prev) => ({ ...prev, targetWordCount: w }));
+    setConfig((prev) => ({ ...prev, targetWordCount: w, initialPassage: undefined }));
   };
 
   const handleQuoteLengthChange = (len: 'short' | 'medium' | 'long') => {
-    setConfig((prev) => ({ ...prev, quoteLength: len }));
+    setConfig((prev) => ({ ...prev, quoteLength: len, initialPassage: undefined }));
   };
 
   const handleDifficultyChange = (diff: PassageDifficulty) => {
-    setConfig((prev) => ({ ...prev, difficulty: diff }));
+    setConfig((prev) => ({ ...prev, difficulty: diff, initialPassage: undefined }));
   };
 
   const togglePunctuation = () => {
-    setConfig((prev) => ({ ...prev, includePunctuation: !prev.includePunctuation }));
+    setConfig((prev) => ({
+      ...prev,
+      includePunctuation: !prev.includePunctuation,
+      initialPassage: undefined,
+    }));
   };
 
   const toggleNumbers = () => {
-    setConfig((prev) => ({ ...prev, includeNumbers: !prev.includeNumbers }));
+    setConfig((prev) => ({
+      ...prev,
+      includeNumbers: !prev.includeNumbers,
+      initialPassage: undefined,
+    }));
   };
 
-  const cycleSoundTheme = () => {
-    const themes: SoundTheme[] = ['off', 'click', 'clack', 'thock'];
-    const currentIdx = themes.indexOf(config.soundTheme || 'off');
-    const nextTheme = themes[(currentIdx + 1) % themes.length];
-    setConfig((prev) => ({ ...prev, soundTheme: nextTheme }));
-    if (nextTheme !== 'off') {
-      playKeystrokeSound(nextTheme, false);
-    }
+  const handleSoundThemeChange = (nextTheme: SoundTheme) => {
+    setConfig((prev) => {
+      saveSoundSettings(nextTheme, prev.soundVolume ?? 0.85);
+      return { ...prev, soundTheme: nextTheme };
+    });
   };
 
   const handleCopySummary = () => {
@@ -271,6 +367,8 @@ export default function PracticePage() {
         ? `${config.targetWordCount} Words`
         : config.mode === 'quote'
         ? 'Quote'
+        : activeDrillKeys
+        ? 'Weak-Key Drill'
         : 'Custom';
 
     const text = `⚡ KeySmasher Speed Test: ${Math.round(metrics.netWpm)} WPM (${Math.round(
@@ -288,7 +386,27 @@ export default function PracticePage() {
   };
 
   const handleRestart = (newPassage: boolean) => {
-    restart(newPassage);
+    if (newPassage && activeDrillKeys && activeDrillKeys.length > 0) {
+      let nextDrill = generateWeakKeyDrillPassage(activeDrillKeys, 25);
+      for (let attempt = 0; attempt < 3 && nextDrill === passage; attempt++) {
+        nextDrill = generateWeakKeyDrillPassage(activeDrillKeys, 25);
+      }
+      if (nextDrill === passage) {
+        restart(false);
+      } else {
+        setConfig((prev) => ({
+          ...prev,
+          mode: 'custom',
+          customText: nextDrill,
+          initialPassage: undefined,
+        }));
+      }
+    } else if (newPassage && config.mode === 'custom') {
+      handleExitDrill();
+      return;
+    } else {
+      restart(newPassage);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 20);
   };
@@ -298,9 +416,9 @@ export default function PracticePage() {
 
   return (
     <div className="pt-6 pb-28 sm:pt-8 sm:pb-36">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Controls Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-surface-border bg-surface/80 p-3.5 backdrop-blur shadow-sm">
+        <div className="relative z-40 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-surface-border bg-surface/80 p-3.5 backdrop-blur shadow-sm">
           {/* Mode Selector */}
           <div className="flex items-center gap-1 rounded-xl bg-surface-muted p-1">
             <button
@@ -417,71 +535,67 @@ export default function PracticePage() {
             )}
 
             {config.mode === 'custom' && (
-              <button
-                type="button"
-                onClick={() => setIsCustomModalOpen(true)}
-                className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 transition-colors duration-150"
-              >
-                Edit Text
-              </button>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {activeDrillKeys && activeDrillKeys.length > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-lg border border-rose-500/40 bg-rose-500/15 px-2.5 py-1 text-xs font-bold text-rose-200">
+                    <Target className="h-3 w-3 text-rose-400" />
+                    <span>Drill: {activeDrillKeys.map((k) => k.toUpperCase()).join(', ')}</span>
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsCustomModalOpen(true)}
+                  className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 transition-colors duration-150"
+                >
+                  Edit Text
+                </button>
+                {activeDrillKeys && activeDrillKeys.length > 0 && (
+                  <button
+                    type="button"
+                    id="practice-exit-drill-btn"
+                    onClick={handleExitDrill}
+                    className="inline-flex items-center gap-1 rounded-lg border border-surface-border bg-surface px-2.5 py-1 text-xs font-semibold text-slate-300 hover:border-slate-500 hover:text-white transition-colors duration-150"
+                    title="Exit weak-key drill and return to standard practice mode"
+                  >
+                    <X className="h-3 w-3" />
+                    <span>Exit Drill</span>
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Quick Toggles: Punctuation, Numbers, Sound, Difficulty */}
-          <div className="flex items-center gap-1.5">
-            {/* Punctuation toggle */}
-            <button
-              type="button"
-              id="practice-toggle-punctuation"
-              onClick={togglePunctuation}
-              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-colors duration-150 ${
-                config.includePunctuation
-                  ? 'border border-amber-500/40 bg-amber-500/10 text-amber-300'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="Toggle Punctuation symbols"
-            >
-              <AtSign className="h-3 w-3" />
-              <span>@#$</span>
-            </button>
+          {/* Content Modifiers (Punctuation, Numbers) & Difficulty */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex items-center gap-1 rounded-xl bg-surface-muted/70 p-1">
+              <button
+                type="button"
+                id="practice-toggle-punctuation"
+                onClick={togglePunctuation}
+                className={`rounded-lg px-2.5 py-1 font-mono text-xs font-semibold transition-colors duration-150 ${
+                  config.includePunctuation
+                    ? 'border border-amber-500/40 bg-amber-500/15 text-amber-300'
+                    : 'border border-transparent text-slate-400 hover:text-white'
+                }`}
+                title="Include Punctuation symbols"
+              >
+                @#$
+              </button>
 
-            {/* Numbers toggle */}
-            <button
-              type="button"
-              id="practice-toggle-numbers"
-              onClick={toggleNumbers}
-              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-colors duration-150 ${
-                config.includeNumbers
-                  ? 'border border-amber-500/40 bg-amber-500/10 text-amber-300'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="Toggle Numeric characters"
-            >
-              <Hash className="h-3 w-3" />
-              <span>123</span>
-            </button>
-
-            {/* Audio switch theme toggle */}
-            <button
-              type="button"
-              id="practice-toggle-sound"
-              onClick={cycleSoundTheme}
-              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-colors duration-150 ${
-                config.soundTheme && config.soundTheme !== 'off'
-                  ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-300'
-                  : 'text-slate-500 hover:text-slate-300'
-              }`}
-              title={`Switch Sound: ${config.soundTheme || 'off'}. Click to cycle: Off -> Click -> Clack -> Thock`}
-            >
-              {config.soundTheme && config.soundTheme !== 'off' ? (
-                <Volume2 className="h-3.5 w-3.5" />
-              ) : (
-                <VolumeX className="h-3.5 w-3.5" />
-              )}
-              <span className="capitalize">
-                {!config.soundTheme || config.soundTheme === 'off' ? 'Mute' : config.soundTheme}
-              </span>
-            </button>
+              <button
+                type="button"
+                id="practice-toggle-numbers"
+                onClick={toggleNumbers}
+                className={`rounded-lg px-2.5 py-1 font-mono text-xs font-semibold transition-colors duration-150 ${
+                  config.includeNumbers
+                    ? 'border border-amber-500/40 bg-amber-500/15 text-amber-300'
+                    : 'border border-transparent text-slate-400 hover:text-white'
+                }`}
+                title="Include Numeric characters"
+              >
+                123
+              </button>
+            </div>
 
             {/* Difficulty selector (when in time/words mode) */}
             {(config.mode === 'time' || config.mode === 'words') && (
@@ -549,7 +663,15 @@ export default function PracticePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Mechanical Keyboard Switch Sound Cycler */}
+            <SoundSwitchSelector
+              buttonId="practice-toggle-sound"
+              value={config.soundTheme || 'off'}
+              volume={config.soundVolume ?? 0.85}
+              onChange={handleSoundThemeChange}
+            />
+
             <button
               type="button"
               id="practice-zen-toggle"
@@ -609,6 +731,8 @@ export default function PracticePage() {
                   ? `${config.targetWordCount} Words Test`
                   : config.mode === 'quote'
                   ? 'Quote Test'
+                  : activeDrillKeys && activeDrillKeys.length > 0
+                  ? `Weak-Key Drill (${activeDrillKeys.map((k) => k.toUpperCase()).join(', ')})`
                   : 'Custom Test'}{' '}
                 • {config.difficulty} difficulty
               </p>
@@ -693,12 +817,12 @@ export default function PracticePage() {
               <PostTestCoachTip
                 metrics={metrics}
                 onApplyDrill={handleApplyCoachDrill}
-                className="mt-6 max-w-3xl mx-auto text-left"
+                className="mt-6 max-w-5xl mx-auto text-left"
               />
 
               {/* Speed Graph (WpmHistoryChart) */}
               {wpmHistory.length >= 2 && (
-                <div className="mt-6 max-w-3xl mx-auto">
+                <div className="mt-6 max-w-5xl mx-auto">
                   <WpmHistoryChart history={wpmHistory} averageWpm={metrics.netWpm} />
                 </div>
               )}
@@ -771,6 +895,26 @@ export default function PracticePage() {
           ) : (
             /* Live Typing Area */
             <div>
+              {activeDrillKeys && activeDrillKeys.length > 0 && (
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2 text-xs text-rose-200">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-3.5 w-3.5 text-rose-400 shrink-0" />
+                    <span>
+                      Targeting missed keys:{' '}
+                      <strong className="font-mono text-white">
+                        {activeDrillKeys.map((k) => k.toUpperCase()).join(', ')}
+                      </strong>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleExitDrill}
+                    className="text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 underline"
+                  >
+                    Switch to normal passage
+                  </button>
+                </div>
+              )}
               <TypingArea
                 renderedWords={renderedWords}
                 currentWordIndex={currentWordIndex}

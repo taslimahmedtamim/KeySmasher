@@ -56,4 +56,35 @@ describe('PracticePage Component', () => {
     fireEvent.keyDown(window, { key: 'a' });
     expect(input).toBeInTheDocument();
   });
+
+  it('allows changing passage with New Passage and switching modes after loading a weak-key drill', () => {
+    window.sessionStorage.setItem(
+      'keysmasher_drill_passage',
+      'boxer absorb boost follow'
+    );
+    window.sessionStorage.setItem('keysmasher_drill_keys', JSON.stringify(['b', 'f', 'o']));
+    window.history.replaceState({}, '', '/practice?drill=weak-keys');
+
+    render(<PracticePage />);
+
+    // Drill banner and initial drill words should appear
+    expect(screen.getByText(/Targeting missed keys:/i)).toBeInTheDocument();
+    const region = screen.getByRole('region', { name: /Typing passage input area/i });
+    expect(region.textContent).toContain('boxerabsorbboostfollow');
+
+    // Clicking "New Passage" during drill should change the text to a new drill passage
+    const newPassageBtn = screen.getByRole('button', { name: /New Passage/i });
+    fireEvent.click(newPassageBtn);
+    expect(region.textContent).not.toContain('boxerabsorbboostfollow');
+    expect(screen.getByText(/Targeting missed keys:/i)).toBeInTheDocument();
+
+    // Clicking "Exit Drill" should exit drill cleanly and generate standard passage text
+    const beforeExitText = region.textContent;
+    const exitBtn = screen.getByRole('button', { name: /Exit Drill/i });
+    fireEvent.click(exitBtn);
+    expect(screen.queryByText(/Targeting missed keys:/i)).not.toBeInTheDocument();
+    expect(region.textContent).not.toBe(beforeExitText);
+
+    window.sessionStorage.clear();
+  });
 });

@@ -10,7 +10,15 @@ export type EngineStatus = 'idle' | 'active' | 'completed' | 'cancelled';
 
 export type CharacterState = 'pending' | 'correct' | 'incorrect' | 'extra';
 
-export type SoundTheme = 'off' | 'click' | 'clack' | 'thock';
+export type SoundCategory = 'mute' | 'clicky' | 'linear' | 'tactile' | 'vintage';
+
+export type SoundTheme =
+  | 'off'
+  | 'click'
+  | 'mx-red'
+  | 'clack'
+  | 'thock'
+  | 'topre';
 
 export interface RenderedChar {
   char: string;
@@ -40,6 +48,7 @@ export interface TypingEngineConfig {
   customText?: string;
   quoteLength?: 'short' | 'medium' | 'long';
   soundTheme?: SoundTheme;
+  soundVolume?: number;
 }
 
 export interface WpmHistoryPoint {
@@ -48,6 +57,7 @@ export interface WpmHistoryPoint {
   netWpm: number;
   accuracy: number;
   errors: number;
+  burstWpm?: number;
 }
 
 export interface ExtendedTypingMetrics extends TypingMetricsResult {

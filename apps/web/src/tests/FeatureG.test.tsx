@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { useUserAnalytics } from '@/features/dashboard/useUserAnalytics';
 import { saveSessionResult, clearStoredSessions } from '@/features/typing/utils/historyStorage';
 import DashboardPage from '@/app/dashboard/page';
+import { ProgressionChart } from '@/features/dashboard/components/ProgressionChart';
 
 const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <AuthProvider>{children}</AuthProvider>
@@ -207,6 +208,54 @@ describe('Feature G: User Dashboard & Analytics', () => {
         fireEvent.click(closeBtn);
       });
       expect(screen.queryByText('Official Typing Proficiency Certificate')).not.toBeInTheDocument();
+    });
+
+    it('scales Y-axis to include extreme rawWpm values without overflowing the SVG', () => {
+      const { container } = render(
+        <ProgressionChart
+          points={[
+            {
+              id: 'p1',
+              testIndex: 1,
+              netWpm: 0,
+              rawWpm: 45,
+              accuracy: 50,
+              consistency: 60,
+              timestamp: Date.now() - 2000,
+              mode: 'time',
+              preset: 'time-15',
+            },
+            {
+              id: 'p2',
+              testIndex: 2,
+              netWpm: 0,
+              rawWpm: 165,
+              accuracy: 40,
+              consistency: 50,
+              timestamp: Date.now() - 1000,
+              mode: 'time',
+              preset: 'time-15',
+            },
+            {
+              id: 'p3',
+              testIndex: 3,
+              netWpm: 65,
+              rawWpm: 72,
+              accuracy: 95,
+              consistency: 90,
+              timestamp: Date.now(),
+              mode: 'time',
+              preset: 'time-15',
+            },
+          ]}
+        />
+      );
+
+      // Top tick must accommodate rawWpm = 165 (+15 buffer -> 180 WPM)
+      expect(screen.getByText('180 WPM')).toBeInTheDocument();
+      const chartSvg = container.querySelector('svg[viewBox="0 0 800 280"]');
+      expect(chartSvg).toBeInTheDocument();
+      expect(chartSvg).toHaveClass('overflow-hidden');
     });
   });
 });

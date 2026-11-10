@@ -100,16 +100,15 @@ describe('Feature H: Smart Typing Coach & Weak-Key Diagnostics', () => {
   });
 
   describe('Targeted Weak-Key Drill Generator', () => {
-    it('synthesizes a targeted drill passage containing words with weak keys', () => {
+    it('synthesizes a high-density drill passage specifically targeting weak keys including rare letters', () => {
       const passage = generateWeakKeyDrillPassage(['p', 'q', 'z'], 15);
       const words = passage.split(' ');
 
       expect(words.length).toBe(15);
-      // At least several words should contain the weak letters
-      const containsWeakKey = words.some((w) =>
-        w.includes('p') || w.includes('q') || w.includes('z')
+      const matchingWords = words.filter(
+        (w) => w.includes('p') || w.includes('q') || w.includes('z')
       );
-      expect(containsWeakKey).toBe(true);
+      expect(matchingWords.length).toBe(15);
     });
 
     it('falls back to a balanced pangram drill if no weak keys are provided', () => {
@@ -164,8 +163,24 @@ describe('Feature H: Smart Typing Coach & Weak-Key Diagnostics', () => {
       );
 
       expect(screen.getByText('QWERTY Keystroke Precision Heatmap')).toBeInTheDocument();
+      expect(screen.getByText('Fingers to Work On')).toBeInTheDocument();
+      expect(screen.getByText('Left Hand')).toBeInTheDocument();
+      expect(screen.getByText('Right Hand')).toBeInTheDocument();
+      expect(screen.getByText(/25 keystrokes, 5 misses/i)).toBeInTheDocument();
 
-      // Click key 'Z' to inspect telemetry drawer
+      // Click weak finger card to highlight its keys and see anchor instruction
+      const leftPinkyCard = screen.getByRole('button', { name: /Left Pinky.*Rest \[A\]/i });
+      fireEvent.click(leftPinkyCard);
+      expect(screen.getByText(/Keys owned by this finger:/i)).toBeInTheDocument();
+
+      // Toggle Finger Zones mode to view finger assignment colors across the keyboard
+      const fingerZonesBtn = screen.getByRole('button', { name: /finger zones/i });
+      fireEvent.click(fingerZonesBtn);
+      expect(screen.getByText('L. Index')).toBeInTheDocument();
+      expect(screen.getByText('R. Index')).toBeInTheDocument();
+
+      // Switch back to accuracy view and click key 'Z' to inspect telemetry drawer
+      fireEvent.click(screen.getByRole('button', { name: /all keys/i }));
       const zKeyButton = screen.getByTitle('Key Z: 80%');
       fireEvent.click(zKeyButton);
 
@@ -242,6 +257,16 @@ describe('Feature H: Smart Typing Coach & Weak-Key Diagnostics', () => {
       expect(screen.getByText('Coach Immediate Takeaway')).toBeInTheDocument();
       expect(screen.getByText(/Bottleneck key/i)).toBeInTheDocument();
       expect(screen.getAllByText(/\[P\]/i).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('QWERTY Keystroke Precision Heatmap')).toBeInTheDocument();
+      expect(screen.queryByText(/Finger Precision Spectrum/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Finger Column:/i)).not.toBeInTheDocument();
+
+      const toggleBtn = screen.getByRole('button', { name: /hide finger map/i });
+      fireEvent.click(toggleBtn);
+      expect(screen.queryByText('QWERTY Keystroke Precision Heatmap')).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /finger & key map/i }));
+      expect(screen.getByText('QWERTY Keystroke Precision Heatmap')).toBeInTheDocument();
 
       const drillBtn = screen.getByRole('button', { name: /drill missed keys/i });
       fireEvent.click(drillBtn);

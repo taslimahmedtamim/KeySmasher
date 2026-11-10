@@ -158,8 +158,9 @@ export const HeroTypingPreview: React.FC = () => {
     }
     if (val.length <= SAMPLE_TEXT.length) {
       if (val.length > input.length) {
-        const isError = SAMPLE_TEXT[val.length - 1] !== val[val.length - 1];
-        playKeystrokeSound('click', isError);
+        const lastChar = val[val.length - 1];
+        const isError = SAMPLE_TEXT[val.length - 1] !== lastChar;
+        playKeystrokeSound('click', isError, lastChar === ' ' ? 'space' : 'char');
       }
       setInput(val);
     }

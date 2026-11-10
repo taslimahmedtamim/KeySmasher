@@ -53,11 +53,14 @@ export const ProgressionChart: React.FC<ProgressionChartProps> = ({ points }) =>
   const chartW = width - paddingLeft - paddingRight;
   const chartH = height - paddingTop - paddingBottom;
 
-  // Min and Max values for scale
-  const wpmValues = filteredPoints.map((p) => p.netWpm);
-  const minWpm = Math.max(0, Math.floor((Math.min(...wpmValues, 40) - 10) / 10) * 10);
-  const maxWpm = Math.ceil((Math.max(...wpmValues, 80) + 15) / 10) * 10;
+  // Min and Max values for scale across BOTH netWpm and rawWpm so spikes never overflow the chart
+  const allWpmValues = filteredPoints.flatMap((p) => [p.netWpm, p.rawWpm]);
+  const minWpm = Math.max(0, Math.floor((Math.min(...allWpmValues, 40) - 10) / 10) * 10);
+  const maxWpm = Math.ceil((Math.max(...allWpmValues, 80) + 15) / 10) * 10;
   const wpmRange = maxWpm - minWpm || 1;
+
+  const clampY = (val: number) =>
+    Math.min(paddingTop + chartH, Math.max(paddingTop, val));
 
   // Coordinates calculation
   const coordinates = filteredPoints.map((p, idx) => {
@@ -65,8 +68,8 @@ export const ProgressionChart: React.FC<ProgressionChartProps> = ({ points }) =>
       filteredPoints.length === 1
         ? paddingLeft + chartW / 2
         : paddingLeft + (idx / (filteredPoints.length - 1)) * chartW;
-    const y = paddingTop + chartH - ((p.netWpm - minWpm) / wpmRange) * chartH;
-    const rawY = paddingTop + chartH - ((p.rawWpm - minWpm) / wpmRange) * chartH;
+    const y = clampY(paddingTop + chartH - ((p.netWpm - minWpm) / wpmRange) * chartH);
+    const rawY = clampY(paddingTop + chartH - ((p.rawWpm - minWpm) / wpmRange) * chartH);
     return { ...p, x, y, rawY };
   });
 
@@ -140,11 +143,11 @@ export const ProgressionChart: React.FC<ProgressionChartProps> = ({ points }) =>
       </div>
 
       {/* SVG Canvas Area */}
-      <div className="relative mt-4 w-full select-none">
+      <div className="relative mt-4 w-full select-none overflow-hidden">
         {filteredPoints.length > 0 ? (
           <svg
             viewBox={`0 0 ${width} ${height}`}
-            className="w-full h-auto overflow-visible"
+            className="w-full h-auto overflow-hidden"
             onMouseLeave={() => setHoveredPoint(null)}
           >
             <defs>
