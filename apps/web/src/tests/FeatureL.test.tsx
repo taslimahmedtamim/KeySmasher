@@ -50,16 +50,16 @@ describe('Feature L: Gamification, Levels, Daily Goals & Achievements', () => {
 
   describe('Level Progression & Titles', () => {
     it('accurately maps level numbers to titles', () => {
-      expect(getLevelTitle(1)).toBe('S.H.I.E.L.D. Recruit');
-      expect(getLevelTitle(4)).toBe('Winter Soldier');
-      expect(getLevelTitle(5)).toBe('Ant-Man');
-      expect(getLevelTitle(11)).toBe('Spider-Man');
-      expect(getLevelTitle(22)).toBe('Captain America');
-      expect(getLevelTitle(23)).toBe('Iron Man');
-      expect(getLevelTitle(24)).toBe('Thor (God of Thunder)');
-      expect(getLevelTitle(25)).toBe('The Incredible Hulk');
-      expect(getLevelTitle(50)).toBe('Supreme Omnipotent Avenger');
-      expect(getLevelTitle(55)).toBe('Omnipotent Avenger (Tier 5)');
+      expect(getLevelTitle(1)).toBe('Tactile Initiate');
+      expect(getLevelTitle(2)).toBe('Cadence Scout');
+      expect(getLevelTitle(4)).toBe('Shadow Typist');
+      expect(getLevelTitle(5)).toBe('Sonic Drifter');
+      expect(getLevelTitle(10)).toBe('Velocity Ranger');
+      expect(getLevelTitle(20)).toBe('Hypersonic Ace');
+      expect(getLevelTitle(25)).toBe('Mythic Speed Demon');
+      expect(getLevelTitle(30)).toBe('Zero-Latency Ronin');
+      expect(getLevelTitle(50)).toBe('The Absolute KeySmasher');
+      expect(getLevelTitle(55)).toBe('The Absolute KeySmasher (Tier 5)');
     });
 
     it('computes level progress and percentage accurately from total XP', () => {
@@ -271,7 +271,7 @@ describe('Feature L: Gamification, Levels, Daily Goals & Achievements', () => {
 
       expect(screen.getByText(/STATUS/i)).toBeInTheDocument();
       expect(screen.getByText(/Daily Training Objectives/i)).toBeInTheDocument();
-      expect(screen.getByText(/Hawkeye/i)).toBeInTheDocument();
+      expect(screen.getByText(/Cadence Scout/i)).toBeInTheDocument();
     });
   });
 });

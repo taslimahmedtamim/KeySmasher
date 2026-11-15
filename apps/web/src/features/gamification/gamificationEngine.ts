@@ -8,70 +8,72 @@ import {
 const GAMIFICATION_STORAGE_KEY = 'keysmasher_gamification_state';
 
 /**
- * Avengers & Marvel Superhero progression titles mapped directly to each level.
+ * Original Sci-Fi / Cyberpunk KeySmasher progression titles mapped directly to each level.
  */
-export const SUPERHERO_LEVEL_TITLES: string[] = [
-  'S.H.I.E.L.D. Recruit', // Level 1
-  'Hawkeye', // Level 2
-  'Falcon', // Level 3
-  'Winter Soldier', // Level 4
-  'Ant-Man', // Level 5
-  'The Wasp', // Level 6
-  'Black Widow', // Level 7
-  'Quicksilver', // Level 8
-  'War Machine', // Level 9
-  'Scarlet Witch', // Level 10
-  'Spider-Man', // Level 11
-  'Black Panther', // Level 12
-  'Shang-Chi', // Level 13
-  'Moon Knight', // Level 14
-  'Star-Lord', // Level 15
-  'Gamora', // Level 16
-  'Rocket Raccoon', // Level 17
-  'Groot', // Level 18
-  'Vision', // Level 19
-  'Doctor Strange', // Level 20
-  'Captain Marvel', // Level 21
-  'Captain America', // Level 22
-  'Iron Man', // Level 23
-  'Thor (God of Thunder)', // Level 24
-  'The Incredible Hulk', // Level 25
-  'Wolverine', // Level 26
-  'Silver Surfer', // Level 27
-  'Ghost Rider', // Level 28
-  'Nova Prime', // Level 29
-  'Adam Warlock', // Level 30
-  'Phoenix Force', // Level 31
-  'Sentry', // Level 32
-  'Thanos (Titan)', // Level 33
-  'Kang the Conqueror', // Level 34
-  'Doctor Doom', // Level 35
-  'Galactus', // Level 36
-  'The Watcher', // Level 37
-  'Celestial Arishem', // Level 38
-  'The Living Tribunal', // Level 39
-  'The One Above All', // Level 40
-  'Quantum Avenger', // Level 41
-  'Multiverse KeySmasher', // Level 42
-  'Vibranium Sentinel', // Level 43
-  'Nano-Tech Virtuoso', // Level 44
-  'Asgardian Overlord', // Level 45
-  'Infinity Gauntlet Titan', // Level 46
-  'Nexus Being', // Level 47
-  'Cosmic Sovereign', // Level 48
-  'Eternal Vanguard', // Level 49
-  'Supreme Omnipotent Avenger', // Level 50
+export const LEVEL_TITLES: string[] = [
+  'Tactile Initiate', // Level 1
+  'Cadence Scout', // Level 2
+  'Circuit Striker', // Level 3
+  'Shadow Typist', // Level 4
+  'Sonic Drifter', // Level 5
+  'Rhythm Hunter', // Level 6
+  'Neon Vanguard', // Level 7
+  'Cyber Ronin', // Level 8
+  'Switchblade Sprinter', // Level 9
+  'Velocity Ranger', // Level 10
+  'Ghost Keystroke', // Level 11
+  'Overclock Operative', // Level 12
+  'Pulse Infiltrator', // Level 13
+  'Thunder Cadence', // Level 14
+  'Tempest Striker', // Level 15
+  'Warp Runner', // Level 16
+  'Chrono Blade', // Level 17
+  'Apex Warden', // Level 18
+  'Laser Precisionist', // Level 19
+  'Hypersonic Ace', // Level 20
+  'Grand Technomancer', // Level 21
+  'Lightning Paragon', // Level 22
+  'Storm Vanguard', // Level 23
+  'Kinetic Master', // Level 24
+  'Mythic Speed Demon', // Level 25
+  'Pulsar Champion', // Level 26
+  'Astral Striker', // Level 27
+  'Stellar Infiltrator', // Level 28
+  'Supernova Titan', // Level 29
+  'Zero-Latency Ronin', // Level 30
+  'Singularity Knight', // Level 31
+  'Eclipse Smasher', // Level 32
+  'Tachyon Overlord', // Level 33
+  'Void Emperor', // Level 34
+  'Nebula Sovereign', // Level 35
+  'Dimensional Weaver', // Level 36
+  'Chrono Architect', // Level 37
+  'Celestial Paragon', // Level 38
+  'Nexus Overclock', // Level 39
+  'Cosmic Striker', // Level 40
+  'Multiverse Vanguard', // Level 41
+  'Event Horizon Lord', // Level 42
+  'Eternal Keymaster', // Level 43
+  'Infinity Phantom', // Level 44
+  'Transcendent Titan', // Level 45
+  'Godspeed Sovereign', // Level 46
+  'Apex Omniscient', // Level 47
+  'Primordial Smasher', // Level 48
+  'Astral Omnipotent', // Level 49
+  'The Absolute KeySmasher', // Level 50
 ];
 
+export const SUPERHERO_LEVEL_TITLES = LEVEL_TITLES;
+
 /**
- * Returns the superhero Avengers title for the given level.
+ * Returns the progression title for the given level.
  */
 export function getLevelTitle(level: number): string {
   const safeLevel = Math.max(1, Math.floor(level));
-  if (safeLevel <= SUPERHERO_LEVEL_TITLES.length) {
-    return SUPERHERO_LEVEL_TITLES[safeLevel - 1];
+  if (safeLevel <= LEVEL_TITLES.length) {
+    return LEVEL_TITLES[safeLevel - 1];
   }
-  return `Omnipotent Avenger (Tier ${safeLevel - SUPERHERO_LEVEL_TITLES.length})`;
+  return `The Absolute KeySmasher (Tier ${safeLevel - LEVEL_TITLES.length})`;
 }
 
 /**
