@@ -59,6 +59,17 @@ export function RaceArena({
     },
   });
 
+  const onSendProgressRef = useRef(onSendProgress);
+  useEffect(() => {
+    onSendProgressRef.current = onSendProgress;
+  }, [onSendProgress]);
+
+  const lastSentRef = useRef<{ progress: number; wpm: number; acc: number }>({
+    progress: -1,
+    wpm: -1,
+    acc: -1,
+  });
+
   // Automatically focus hidden input when RACING begins
   useEffect(() => {
     if (room.status === 'RACING') {
@@ -79,14 +90,31 @@ export function RaceArena({
       ? Math.min(100, Math.max(0, (metrics.totalTypedCharacters / totalCharsInPassage) * 100))
       : 0;
 
-    onSendProgress(progress, metrics.netWpm, metrics.accuracy);
+    const roundedProgress = Math.round(progress * 10) / 10;
+    const roundedWpm = Math.round(metrics.netWpm);
+    const roundedAcc = Math.round(metrics.accuracy * 10) / 10;
+
+    if (
+      lastSentRef.current.progress === roundedProgress &&
+      lastSentRef.current.wpm === roundedWpm &&
+      lastSentRef.current.acc === roundedAcc
+    ) {
+      return;
+    }
+
+    lastSentRef.current = {
+      progress: roundedProgress,
+      wpm: roundedWpm,
+      acc: roundedAcc,
+    };
+
+    onSendProgressRef.current(roundedProgress, roundedWpm, roundedAcc);
   }, [
     metrics.totalTypedCharacters,
     metrics.netWpm,
     metrics.accuracy,
     room.passage.length,
     room.status,
-    onSendProgress,
   ]);
 
   return (

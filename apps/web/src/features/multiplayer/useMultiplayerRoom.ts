@@ -27,6 +27,11 @@ const DEFAULT_WS_URL =
 export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
   const { user } = useAuth();
   const [room, setRoom] = useState<MultiplayerRoom | null>(null);
+  const roomRef = useRef<MultiplayerRoom | null>(null);
+  useEffect(() => {
+    roomRef.current = room;
+  }, [room]);
+
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('idle');
   const [countdownRemaining, setCountdownRemaining] = useState<number>(5);
   const [chatMessages, setChatMessages] = useState<RoomChatMessage[]>([]);
@@ -318,19 +323,21 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
   // Leave room
   const leaveRoom = useCallback(() => {
     clearSimTimers();
-    if (room) {
-      sendWs('room:leave', { roomCode: room.code });
+    const currentRoom = roomRef.current;
+    if (currentRoom) {
+      sendWs('room:leave', { roomCode: currentRoom.code });
     }
     setRoom(null);
     setChatMessages([]);
-  }, [clearSimTimers, room, sendWs]);
+  }, [clearSimTimers, sendWs]);
 
   // Toggle ready
   const toggleReady = useCallback(
     (isReady?: boolean) => {
-      if (!room) return;
+      const currentRoom = roomRef.current;
+      if (!currentRoom) return;
 
-      if (sendWs('room:ready', { roomCode: room.code, isReady })) {
+      if (sendWs('room:ready', { roomCode: currentRoom.code, isReady })) {
         return;
       }
 
@@ -347,20 +354,21 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
         };
       });
     },
-    [room, sendWs]
+    [sendWs]
   );
 
   // Update config
   const updateConfig = useCallback(
     (newConfig: Partial<RoomConfig>) => {
-      if (!room) return;
+      const currentRoom = roomRef.current;
+      if (!currentRoom) return;
 
-      if (sendWs('room:update_config', { roomCode: room.code, config: newConfig })) {
+      if (sendWs('room:update_config', { roomCode: currentRoom.code, config: newConfig })) {
         return;
       }
 
       // Local simulated config update
-      const updatedConfig = { ...room.config, ...newConfig };
+      const updatedConfig = { ...currentRoom.config, ...newConfig };
       const newPassage = generatePassage({
         mode: updatedConfig.mode,
         targetWordCount: (updatedConfig.targetWords as 10 | 25 | 50 | 100) || 25,
@@ -372,15 +380,16 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
 
       setRoom((prev) => (prev ? { ...prev, config: updatedConfig, passage: newPassage } : null));
     },
-    [room, sendWs]
+    [sendWs]
   );
 
   // Add bot
   const addBot = useCallback(
     (difficulty: 'easy' | 'medium' | 'hard' | 'demon' = 'medium') => {
-      if (!room) return;
+      const currentRoom = roomRef.current;
+      if (!currentRoom) return;
 
-      if (sendWs('room:add_bot', { roomCode: room.code, difficulty })) {
+      if (sendWs('room:add_bot', { roomCode: currentRoom.code, difficulty })) {
         return;
       }
 
@@ -404,15 +413,16 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
         prev ? { ...prev, participants: [...prev.participants, botParticipant] } : null
       );
     },
-    [room, sendWs]
+    [sendWs]
   );
 
   // Kick bot
   const kickBot = useCallback(
     (botId: string) => {
-      if (!room) return;
+      const currentRoom = roomRef.current;
+      if (!currentRoom) return;
 
-      if (sendWs('room:kick_bot', { roomCode: room.code, botId })) {
+      if (sendWs('room:kick_bot', { roomCode: currentRoom.code, botId })) {
         return;
       }
 
@@ -425,14 +435,15 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
           : null
       );
     },
-    [room, sendWs]
+    [sendWs]
   );
 
   // Start race
   const startRace = useCallback(() => {
-    if (!room) return;
+    const currentRoom = roomRef.current;
+    if (!currentRoom) return;
 
-    if (sendWs('race:start', { roomCode: room.code })) {
+    if (sendWs('race:start', { roomCode: currentRoom.code })) {
       return;
     }
 
@@ -526,12 +537,13 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
         }, 300);
       }
     }, 1000);
-  }, [clearSimTimers, room, sendWs]);
+  }, [clearSimTimers, sendWs]);
 
   // Send progress (throttled ~150ms)
   const sendProgress = useCallback(
     (progress: number, currentWpm: number, accuracy: number) => {
-      if (!room || room.status !== 'RACING') return;
+      const currentRoom = roomRef.current;
+      if (!currentRoom || currentRoom.status !== 'RACING') return;
 
       const now = Date.now();
       if (now - lastProgressSentRef.current < 150 && progress < 100) {
@@ -539,35 +551,50 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
       }
       lastProgressSentRef.current = now;
 
-      if (sendWs('race:progress', { roomCode: room.code, progress, currentWpm, accuracy })) {
+      if (sendWs('race:progress', { roomCode: currentRoom.code, progress, currentWpm, accuracy })) {
         return;
       }
 
-      // Local simulated participant progress
+      // Local simulated participant progress: only update if state actually changed
       setRoom((prev) => {
         if (!prev) return null;
+        const target = prev.participants.find((p) => p.id === participantIdRef.current);
+        const newProgress = Math.min(100, Math.max(0, Math.round(progress * 10) / 10));
+        const newWpm = Math.round(currentWpm);
+        const newAcc = Math.round(accuracy * 10) / 10;
+
+        if (
+          target &&
+          target.progress === newProgress &&
+          target.currentWpm === newWpm &&
+          target.accuracy === newAcc
+        ) {
+          return prev; // Prevent redundant re-renders
+        }
+
         return {
           ...prev,
           participants: prev.participants.map((p) =>
             p.id === participantIdRef.current
               ? {
                   ...p,
-                  progress: Math.min(100, Math.max(0, Math.round(progress * 10) / 10)),
-                  currentWpm: Math.round(currentWpm),
-                  accuracy: Math.round(accuracy * 10) / 10,
+                  progress: newProgress,
+                  currentWpm: newWpm,
+                  accuracy: newAcc,
                 }
               : p
           ),
         };
       });
     },
-    [room, sendWs]
+    [sendWs]
   );
 
   // Send finish
   const sendFinish = useCallback(
     (submission: RaceSubmission) => {
-      if (!room || room.status !== 'RACING') return;
+      const currentRoom = roomRef.current;
+      if (!currentRoom || currentRoom.status !== 'RACING') return;
 
       if (sendWs('race:finish', submission)) {
         return;
@@ -614,25 +641,26 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
         };
       });
     },
-    [room, sendWs]
+    [sendWs]
   );
 
   // Rematch
   const sendRematch = useCallback(() => {
-    if (!room) return;
+    const currentRoom = roomRef.current;
+    if (!currentRoom) return;
 
-    if (sendWs('room:rematch', { roomCode: room.code })) {
+    if (sendWs('room:rematch', { roomCode: currentRoom.code })) {
       return;
     }
 
     clearSimTimers();
     const newPassage = generatePassage({
-      mode: room.config.mode,
-      targetWordCount: (room.config.targetWords as 10 | 25 | 50 | 100) || 25,
-      durationSeconds: (room.config.targetDuration as 15 | 30 | 60 | 120) || 30,
-      difficulty: room.config.difficulty,
-      includePunctuation: room.config.punctuation,
-      includeNumbers: room.config.numbers,
+      mode: currentRoom.config.mode,
+      targetWordCount: (currentRoom.config.targetWords as 10 | 25 | 50 | 100) || 25,
+      durationSeconds: (currentRoom.config.targetDuration as 15 | 30 | 60 | 120) || 30,
+      difficulty: currentRoom.config.difficulty,
+      includePunctuation: currentRoom.config.punctuation,
+      includeNumbers: currentRoom.config.numbers,
     });
 
     setCountdownRemaining(5);
@@ -655,22 +683,24 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
         })),
       };
     });
-  }, [clearSimTimers, room, sendWs]);
+  }, [clearSimTimers, sendWs]);
 
   // Send chat
   const sendChat = useCallback(
     (text: string) => {
-      if (!room || !text.trim()) return;
+      const currentRoom = roomRef.current;
+      if (!currentRoom || !text.trim()) return;
 
       const trimmed = text.trim().slice(0, 150);
-      if (sendWs('room:chat', { roomCode: room.code, text: trimmed })) {
+      if (sendWs('room:chat', { roomCode: currentRoom.code, text: trimmed })) {
         return;
       }
 
       setChatMessages((prev) => [
         ...prev.slice(-49),
         {
-          id: `local-msg-${Date.now()}`,
+          id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          roomCode: currentRoom.code,
           senderId: participantIdRef.current,
           senderName: username,
           text: trimmed,
@@ -678,7 +708,7 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
         },
       ]);
     },
-    [room, sendWs, username]
+    [sendWs, username]
   );
 
   const currentParticipant =
