@@ -90,7 +90,7 @@ export function RaceArena({
   ]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-3.5 animate-fade-in">
       {/* Top: Multi-lane Race Track */}
       <RaceTrack
         participants={room.participants}
@@ -98,8 +98,8 @@ export function RaceArena({
       />
 
       {/* Live Telemetry Bar */}
-      <div className="flex items-center justify-between rounded-xl border border-surface-border bg-surface px-6 py-3 text-xs">
-        <div className="flex items-center gap-6">
+      <div className="flex items-center justify-between rounded-xl border border-surface-border bg-surface px-4 sm:px-6 py-2 text-xs">
+        <div className="flex items-center gap-4 sm:gap-6">
           <div>
             <span className="text-slate-500 uppercase tracking-wider text-[10px]">Net Speed: </span>
             <span className="font-mono text-base font-black text-cyan-400">{metrics.netWpm}</span>
@@ -115,8 +115,8 @@ export function RaceArena({
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="font-mono text-slate-400">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="font-mono text-slate-400 text-xs">
             Time: <span className="font-bold text-white">{Math.round(metrics.elapsedSeconds)}s</span>
           </div>
           <button
@@ -132,7 +132,7 @@ export function RaceArena({
       {/* Active Passage Typing Box */}
       <div
         onClick={() => inputRef.current?.focus({ preventScroll: true })}
-        className="relative rounded-2xl border-2 border-purple-500/30 bg-surface/80 p-8 shadow-2xl backdrop-blur-md focus-within:border-cyan-400 focus-within:shadow-neon-cyan transition-all cursor-text min-h-[220px]"
+        className="relative rounded-2xl border-2 border-purple-500/30 bg-surface/80 p-5 sm:p-6 shadow-2xl backdrop-blur-md focus-within:border-cyan-400 focus-within:shadow-neon-cyan transition-all cursor-text min-h-[190px]"
       >
         <TypingArea
           renderedWords={renderedWords}
@@ -145,7 +145,7 @@ export function RaceArena({
           onPaste={actions.handlePaste}
         />
 
-        <div className="mt-8 text-center text-xs text-slate-500">
+        <div className="mt-4 text-center text-xs text-slate-500">
           Battle arena is live • Space advances words • Focus on cadence!
         </div>
       </div>
