@@ -60,6 +60,17 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#090d16" />
         <meta name="color-scheme" content="dark" />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              html, body, #__next {
+                background-color: #090d16 !important;
+                color: #f1f5f9;
+                color-scheme: dark !important;
+              }
+            `,
+          }}
+        />
       </head>
       <body
         style={{ colorScheme: 'dark', backgroundColor: '#090d16' }}
@@ -68,7 +79,7 @@ export default function RootLayout({
         <AppProviders>
           <SkipToContent />
           <Header />
-          <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+          <main id="main-content" tabIndex={-1} className="flex-1 outline-none focus:outline-none">
             {children}
           </main>
           <Footer />

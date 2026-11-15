@@ -464,7 +464,7 @@ export default function PracticePage() {
       : undefined;
 
   return (
-    <div className="pt-6 pb-28 sm:pt-8 sm:pb-36">
+    <div className="pt-6 pb-28 sm:pt-8 sm:pb-36 page-enter">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Controls Bar */}
         <div className="relative z-40 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-surface-border bg-surface/80 p-3.5 backdrop-blur shadow-sm">

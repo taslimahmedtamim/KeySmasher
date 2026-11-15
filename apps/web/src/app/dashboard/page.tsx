@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const { levelProgress, dailyGoals, openAchievementsModal } = useGamification();
 
   return (
-    <div className="pt-6 pb-28 sm:pt-8 sm:pb-36">
+    <div className="pt-6 pb-28 sm:pt-8 sm:pb-36 page-enter">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
         {/* 1. Profile & Quick Actions Banner */}
         <DashboardProfileBanner summary={summary} academy={academy} />

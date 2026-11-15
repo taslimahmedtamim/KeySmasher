@@ -69,10 +69,10 @@ export const Header: React.FC = () => {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }}
-                  className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors duration-150 ${
+                  className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 active:scale-95 ${
                     isActive
-                      ? 'border border-cyan-500/30 bg-surface-muted text-cyan-400 shadow-sm'
-                      : 'text-slate-300 hover:bg-surface hover:text-slate-100'
+                      ? 'border border-cyan-500/40 bg-surface-muted text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
+                      : 'text-slate-300 hover:bg-surface hover:text-white'
                   }`}
                 >
                   <Icon className={`h-4 w-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
@@ -96,10 +96,10 @@ export const Header: React.FC = () => {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors duration-150 ${
+              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 active:scale-95 ${
                 pathname === '/practice'
-                  ? 'border border-cyan-500/30 bg-surface-muted text-cyan-400 shadow-sm'
-                  : 'text-slate-300 hover:bg-surface hover:text-slate-100'
+                  ? 'border border-cyan-500/40 bg-surface-muted text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
+                  : 'text-slate-300 hover:bg-surface hover:text-white'
               }`}
             >
               <Zap className={`h-4 w-4 ${pathname === '/practice' ? 'text-cyan-400' : 'text-slate-400'}`} />

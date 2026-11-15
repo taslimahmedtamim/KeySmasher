@@ -17,7 +17,7 @@ import { HeroTypingPreview } from '@/components/home/HeroTypingPreview';
 
 export default function HomePage() {
   return (
-    <div className="relative overflow-hidden py-12 md:py-20">
+    <div className="relative overflow-hidden py-12 md:py-20 page-enter">
       {/* Background ambient lighting and subtle cyberpunk grid */}
       <div className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-40" />
       <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-cyan-500/15 blur-[120px]" />
