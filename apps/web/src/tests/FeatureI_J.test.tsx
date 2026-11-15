@@ -251,16 +251,18 @@ describe('Feature I & J: Real-Time Multiplayer Arena & Races', () => {
   });
 
   describe('RaceCountdownOverlay', () => {
-    it('renders the large pulsing countdown numbers', () => {
+    it('renders the large pulsing countdown numbers and starting grid lights', () => {
       const { rerender } = render(<RaceCountdownOverlay secondsRemaining={3} />);
       expect(screen.getByText('3')).toBeInTheDocument();
-      expect(screen.getByText(/SYNCHRONIZING RACE ENGINE/i)).toBeInTheDocument();
+      expect(screen.getByText(/RACE STARTING GRID/i)).toBeInTheDocument();
 
       rerender(<RaceCountdownOverlay secondsRemaining={1} />);
       expect(screen.getByText('1')).toBeInTheDocument();
+      expect(screen.getByText(/READY FOR LAUNCH/i)).toBeInTheDocument();
 
       rerender(<RaceCountdownOverlay secondsRemaining={0} />);
-      expect(screen.queryByText(/SYNCHRONIZING/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/RACE STARTING GRID/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/READY FOR LAUNCH/i)).not.toBeInTheDocument();
     });
   });
 
