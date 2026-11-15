@@ -4,6 +4,8 @@ import {
   TimeDurationOption,
   WordCountOption,
   TypingMetricsResult,
+  CodeLanguage,
+  CodeCategory,
 } from '@keysmasher/shared';
 
 export type EngineStatus = 'idle' | 'active' | 'completed' | 'cancelled';
@@ -47,6 +49,9 @@ export interface TypingEngineConfig {
   initialPassage?: string;
   customText?: string;
   quoteLength?: 'short' | 'medium' | 'long';
+  codeLanguage?: CodeLanguage;
+  codeCategory?: CodeCategory;
+  codeSnippetId?: string;
   soundTheme?: SoundTheme;
   soundVolume?: number;
 }
@@ -68,4 +73,6 @@ export interface ExtendedTypingMetrics extends TypingMetricsResult {
   extraCharacters: number;
   consistency: number;
   keyStats?: Record<string, { attempts: number; errors: number; confusion: Record<string, number> }>;
+  symbolAccuracy?: number;
+  totalSymbols?: number;
 }

@@ -6,6 +6,12 @@ import {
   WORD_LIST_EXPERT,
 } from './words';
 import { getRandomQuote } from './quotes';
+import {
+  CodeCategory,
+  CodeLanguage,
+  CODE_SNIPPETS,
+  getRandomCodeSnippet,
+} from './code';
 
 export interface PassageGenerationOptions {
   mode: TestMode;
@@ -16,6 +22,9 @@ export interface PassageGenerationOptions {
   includeNumbers?: boolean;
   customText?: string;
   quoteLength?: 'short' | 'medium' | 'long';
+  codeLanguage?: CodeLanguage;
+  codeCategory?: CodeCategory;
+  codeSnippetId?: string;
 }
 
 /**
@@ -43,6 +52,15 @@ export function generatePassage(options: PassageGenerationOptions): string {
   // Mode: Quote
   if (options.mode === 'quote') {
     return getRandomQuote(options.quoteLength).text;
+  }
+
+  // Mode: Code
+  if (options.mode === 'code') {
+    if (options.codeSnippetId) {
+      const match = CODE_SNIPPETS.find((s) => s.id === options.codeSnippetId);
+      if (match) return match.code;
+    }
+    return getRandomCodeSnippet(options.codeLanguage, options.codeCategory).code;
   }
 
   // Mode: Custom text

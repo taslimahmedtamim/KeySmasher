@@ -52,6 +52,7 @@ export interface SavedTestSession {
   errorCount: number;
   targetDuration?: number;
   targetWords?: number;
+  symbolAccuracy?: number;
   keyStats?: Record<string, { attempts: number; errors: number; confusion?: Record<string, number> }>;
 }
 

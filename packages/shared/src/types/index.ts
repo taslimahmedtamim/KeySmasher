@@ -1,4 +1,4 @@
-export type TestMode = 'time' | 'words' | 'quote' | 'custom';
+export type TestMode = 'time' | 'words' | 'quote' | 'code' | 'custom';
 
 export type TimeDurationOption = 15 | 30 | 60 | 120;
 export type WordCountOption = 10 | 25 | 50 | 100;

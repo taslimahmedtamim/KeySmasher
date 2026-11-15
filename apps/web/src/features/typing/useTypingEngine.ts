@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   calculateTypingMetrics,
   calculateConsistency,
+  calculateSymbolAccuracy,
   generatePassage,
   PassageDifficulty,
   TestMode,
@@ -174,6 +175,8 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
   currentInputRef.current = currentInput;
   const currentWordIndexRef = useRef<number>(currentWordIndex);
   currentWordIndexRef.current = currentWordIndex;
+  const passageRef = useRef<string>(passage);
+  passageRef.current = passage;
 
   const lastAppliedInitialPassageRef = useRef<string | undefined>(undefined);
 
@@ -197,6 +200,9 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         includeNumbers: cfg.includeNumbers,
         customText: cfg.customText,
         quoteLength: cfg.quoteLength,
+        codeLanguage: cfg.codeLanguage,
+        codeCategory: cfg.codeCategory,
+        codeSnippetId: cfg.codeSnippetId,
       });
     },
     []
@@ -204,7 +210,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
 
   // Passage-defining parameters key: only regenerate passage when test mode or content settings change
   // Sound theme, volume, or paste toggles must NEVER alter or wipe the passage text!
-  const passageDepsKey = `${config.mode}-${config.difficulty}-${config.durationSeconds}-${config.targetWordCount}-${config.quoteLength || ''}-${config.includePunctuation}-${config.includeNumbers}-${config.customText || ''}-${config.initialPassage || ''}`;
+  const passageDepsKey = `${config.mode}-${config.difficulty}-${config.durationSeconds}-${config.targetWordCount}-${config.quoteLength || ''}-${config.includePunctuation}-${config.includeNumbers}-${config.customText || ''}-${config.initialPassage || ''}-${config.codeLanguage || ''}-${config.codeCategory || ''}-${config.codeSnippetId || ''}`;
 
   // Initialize on mount or when passage configuration changes
   useEffect(() => {
@@ -265,6 +271,19 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
 
     const consistency = calculateConsistency(wpmHistory.map((p) => p.rawWpm));
 
+    let symbolStats: { symbolAccuracy?: number; totalSymbols?: number } = {};
+    if (config.mode === 'code' && passage.length > 0) {
+      const typedPassage = [
+        ...typedWords.slice(0, currentWordIndex),
+        ...(currentInput ? [currentInput] : []),
+      ].join(' ');
+      const symResult = calculateSymbolAccuracy(typedPassage, passage);
+      symbolStats = {
+        symbolAccuracy: symResult.accuracy,
+        totalSymbols: symResult.totalSymbols,
+      };
+    }
+
     return {
       ...baseMetrics,
       timeRemaining: Math.ceil(timeRemaining),
@@ -274,8 +293,9 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       extraCharacters: characterCounts.extra,
       consistency,
       keyStats: { ...keyStatsRef.current },
+      ...symbolStats,
     };
-  }, [characterCounts, elapsedSeconds, config, currentWordIndex, expectedWords.length, wpmHistory]);
+  }, [characterCounts, elapsedSeconds, config, currentWordIndex, expectedWords.length, wpmHistory, passage, typedWords, currentInput]);
 
   // End / Complete test (reads latest refs so timer callbacks never capture stale metrics/history)
   const completeTest = useCallback((overrideElapsed?: number) => {
@@ -310,6 +330,19 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         elapsedSeconds: finalElapsed,
       });
 
+      let symbolStats: { symbolAccuracy?: number; totalSymbols?: number } = {};
+      if (latestConfig.mode === 'code' && passageRef.current.length > 0) {
+        const typedPassage = [
+          ...typedWordsRef.current.slice(0, currentWordIndexRef.current),
+          ...(currentInputRef.current ? [currentInputRef.current] : []),
+        ].join(' ');
+        const symResult = calculateSymbolAccuracy(typedPassage, passageRef.current);
+        symbolStats = {
+          symbolAccuracy: symResult.accuracy,
+          totalSymbols: symResult.totalSymbols,
+        };
+      }
+
       const finalMetrics: ExtendedTypingMetrics = {
         ...baseMetrics,
         timeRemaining:
@@ -322,6 +355,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         extraCharacters: latestCounts.extra,
         consistency: calculateConsistency(latestHistory.map((p) => p.rawWpm)),
         keyStats: { ...keyStatsRef.current },
+        ...symbolStats,
       };
 
       onTestCompleteRef.current(finalMetrics, latestHistory);
@@ -463,13 +497,13 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
 
       // Start test on first valid keystroke if idle
       if (statusRef.current === 'idle') {
-        if (e.key.length === 1 || e.key === 'Backspace' || e.key === ' ') {
+        if (e.key.length === 1 || e.key === 'Backspace' || e.key === ' ' || e.key === 'Enter') {
           startTest();
         }
       }
 
-      // Handle Space: advance word
-      if (e.key === ' ') {
+      // Handle Space (or Enter in code mode): advance word
+      if (e.key === ' ' || (config.mode === 'code' && e.key === 'Enter')) {
         e.preventDefault();
         if (currentInput.length === 0) return; // Don't advance on empty space
 

@@ -6,6 +6,7 @@ import {
   Clock,
   Type,
   Quote,
+  Code,
   FileText,
   RotateCcw,
   RefreshCw,
@@ -31,6 +32,10 @@ import {
   TimeDurationOption,
   WordCountOption,
   generateWeakKeyDrillPassage,
+  CodeLanguage,
+  CodeCategory,
+  CODE_LANGUAGES,
+  CODE_SNIPPETS,
 } from '@keysmasher/shared';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useTypingEngine } from '@/features/typing/useTypingEngine';
@@ -216,6 +221,7 @@ export default function PracticePage() {
           errorCount: metrics.incorrectCharacters,
           targetDuration: config.mode === 'time' ? config.durationSeconds : undefined,
           targetWords: config.mode === 'words' ? config.targetWordCount : undefined,
+          symbolAccuracy: metrics.symbolAccuracy,
           keyStats: metrics.keyStats,
         });
         setSessionHistory((prev) => [saved, ...prev].slice(0, 25));
@@ -264,10 +270,30 @@ export default function PracticePage() {
       setConfig((prev) => ({
         ...prev,
         mode: newMode,
+        codeLanguage: prev.codeLanguage || 'typescript',
+        codeCategory: prev.codeCategory || 'snippet',
         customText: undefined,
         initialPassage: undefined,
       }));
     }
+  };
+
+  const handleCodeLanguageChange = (lang: CodeLanguage) => {
+    setConfig((prev) => ({
+      ...prev,
+      codeLanguage: lang,
+      codeSnippetId: undefined,
+      initialPassage: undefined,
+    }));
+  };
+
+  const handleCodeCategoryChange = (cat: CodeCategory) => {
+    setConfig((prev) => ({
+      ...prev,
+      codeCategory: cat,
+      codeSnippetId: undefined,
+      initialPassage: undefined,
+    }));
   };
 
   const handleCustomTextApply = (customText: string) => {
@@ -369,6 +395,8 @@ export default function PracticePage() {
   };
 
   const handleCopySummary = () => {
+    const codeLangName =
+      CODE_LANGUAGES.find((l) => l.id === (config.codeLanguage || 'typescript'))?.name || 'Code';
     const modeLabel =
       config.mode === 'time'
         ? `${config.durationSeconds}s Time`
@@ -376,13 +404,20 @@ export default function PracticePage() {
         ? `${config.targetWordCount} Words`
         : config.mode === 'quote'
         ? 'Quote'
+        : config.mode === 'code'
+        ? `Code (${codeLangName})`
         : activeDrillKeys
         ? 'Weak-Key Drill'
         : 'Custom';
 
+    const symbolPart =
+      config.mode === 'code' && metrics.symbolAccuracy !== undefined
+        ? ` | ${Math.round(metrics.symbolAccuracy)}% Symbols`
+        : '';
+
     const text = `⚡ KeySmasher Speed Test: ${Math.round(metrics.netWpm)} WPM (${Math.round(
       metrics.rawWpm
-    )} Raw) | ${Math.round(metrics.accuracy)}% Acc | ${metrics.consistency}% Consistency | ${modeLabel}`;
+    )} Raw) | ${Math.round(metrics.accuracy)}% Acc | ${metrics.consistency}% Consistency${symbolPart} | ${modeLabel}`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -422,6 +457,11 @@ export default function PracticePage() {
 
   const isCompleted = status === 'completed';
   const sessionStats = getSessionStats(sessionHistory);
+  const activeSnippet =
+    config.mode === 'code'
+      ? CODE_SNIPPETS.find((s) => s.code.trim() === passage.trim()) ||
+        CODE_SNIPPETS.find((s) => s.id === config.codeSnippetId)
+      : undefined;
 
   return (
     <div className="pt-6 pb-28 sm:pt-8 sm:pb-36">
@@ -468,6 +508,19 @@ export default function PracticePage() {
             >
               <Quote className="h-3.5 w-3.5" />
               <span>Quote</span>
+            </button>
+            <button
+              type="button"
+              id="practice-mode-code"
+              onClick={() => handleModeChange('code')}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors duration-150 ${
+                config.mode === 'code'
+                  ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Code className="h-3.5 w-3.5" />
+              <span>Code</span>
             </button>
             <button
               type="button"
@@ -541,6 +594,59 @@ export default function PracticePage() {
                   </button>
                 ))}
               </>
+            )}
+
+            {config.mode === 'code' && (
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Language Picker */}
+                <div className="flex items-center gap-0.5 rounded-xl bg-surface-muted/90 p-1 border border-surface-border">
+                  {CODE_LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.id}
+                      type="button"
+                      id={`practice-code-lang-${lang.id}`}
+                      aria-label={lang.name}
+                      onClick={() => handleCodeLanguageChange(lang.id)}
+                      className={`rounded-lg px-2 py-0.5 text-xs font-semibold transition-colors duration-150 ${
+                        (config.codeLanguage || 'typescript') === lang.id
+                          ? 'bg-purple-500 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                      title={lang.name}
+                    >
+                      {lang.icon}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Category: Snippets vs Symbol Sprint */}
+                <div className="flex items-center gap-1 rounded-xl bg-surface-muted/90 p-1 border border-surface-border">
+                  <button
+                    type="button"
+                    id="practice-code-cat-snippet"
+                    onClick={() => handleCodeCategoryChange('snippet')}
+                    className={`rounded-lg px-2.5 py-0.5 text-xs font-medium transition-colors duration-150 ${
+                      (config.codeCategory || 'snippet') === 'snippet'
+                        ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-400 font-bold'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Snippets
+                  </button>
+                  <button
+                    type="button"
+                    id="practice-code-cat-symbols"
+                    onClick={() => handleCodeCategoryChange('symbols')}
+                    className={`rounded-lg px-2.5 py-0.5 text-xs font-medium transition-colors duration-150 ${
+                      config.codeCategory === 'symbols'
+                        ? 'border border-cyan-500/40 bg-cyan-500/10 text-cyan-400 font-bold'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Symbol Drill
+                  </button>
+                </div>
+              </div>
             )}
 
             {config.mode === 'custom' && (
@@ -740,6 +846,8 @@ export default function PracticePage() {
                   ? `${config.targetWordCount} Words Test`
                   : config.mode === 'quote'
                   ? 'Quote Test'
+                  : config.mode === 'code'
+                  ? `Code Test (${CODE_LANGUAGES.find((l) => l.id === (config.codeLanguage || 'typescript'))?.name || 'Code'}${activeSnippet ? ` • ${activeSnippet.title}` : ''})`
                   : activeDrillKeys && activeDrillKeys.length > 0
                   ? `Weak-Key Drill (${activeDrillKeys.map((k) => k.toUpperCase()).join(', ')})`
                   : 'Custom Test'}{' '}
@@ -821,6 +929,33 @@ export default function PracticePage() {
                   <div className="text-[9px] text-slate-500">chars / min</div>
                 </div>
               </div>
+
+              {/* Developer Syntax Breakdown (Code Mode) */}
+              {config.mode === 'code' && metrics.symbolAccuracy !== undefined && (
+                <div className="mt-5 rounded-2xl border border-purple-500/30 bg-purple-950/20 p-4 max-w-xl mx-auto flex items-center justify-between text-left">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-purple-500/20 p-2.5 text-purple-400 border border-purple-500/30">
+                      <Code className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase font-bold text-purple-300">
+                        Developer Syntax Accuracy
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">
+                        Specialized score across braces, brackets, operators & syntax tokens
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-black text-purple-300 font-mono">
+                      {Math.round(metrics.symbolAccuracy)}%
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono">
+                      {metrics.totalSymbols ?? 0} syntax symbols
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Immediate Post-Test Smart Coach Feedback */}
               <PostTestCoachTip
@@ -924,6 +1059,35 @@ export default function PracticePage() {
                   </button>
                 </div>
               )}
+              {/* Code Mode Active Snippet Metadata Banner */}
+              {config.mode === 'code' && (
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-purple-500/30 bg-purple-950/20 px-3.5 py-2.5 text-xs">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-lg bg-purple-500/20 px-2 py-0.5 font-mono text-[11px] font-bold text-purple-300 border border-purple-500/30">
+                      {CODE_LANGUAGES.find((l) => l.id === (config.codeLanguage || 'typescript'))?.name || 'Code'}
+                    </span>
+                    <span className="font-bold text-white">
+                      {activeSnippet?.title ||
+                        (config.codeCategory === 'symbols' ? 'Symbol Sprint Drill' : 'Code Practice')}
+                    </span>
+                    {activeSnippet?.description && (
+                      <span className="hidden sm:inline text-slate-400 border-l border-slate-700 pl-2">
+                        {activeSnippet.description}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {metrics.symbolAccuracy !== undefined && (
+                      <span className="font-mono text-cyan-300 text-[11px]">
+                        Symbol Acc: <strong className="font-bold text-white">{Math.round(metrics.symbolAccuracy)}%</strong>
+                      </span>
+                    )}
+                    <span className="rounded bg-surface-muted px-2 py-0.5 font-mono text-[10px] text-slate-400 border border-surface-border">
+                      {config.codeCategory === 'symbols' ? 'Drill' : 'Snippet'}
+                    </span>
+                  </div>
+                </div>
+              )}
               <TypingArea
                 renderedWords={renderedWords}
                 currentWordIndex={currentWordIndex}
@@ -942,7 +1106,12 @@ export default function PracticePage() {
         <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 px-2">
           <div className="flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5 text-slate-400" />
-            <span>Click inside the box or start typing immediately. Space advances to next word.</span>
+            <span>
+              Click inside the box or start typing immediately.{' '}
+              {config.mode === 'code'
+                ? 'Space or Enter advances to next token.'
+                : 'Space advances to next word.'}
+            </span>
           </div>
           <div>
             <span className="rounded bg-surface-muted border border-surface-border px-1.5 py-0.5 font-mono text-[10px]">
