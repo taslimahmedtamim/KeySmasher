@@ -1,8 +1,7 @@
-const { PHASE_DEVELOPMENT_SERVER } = require('next/constants');
-
 /** @type {import('next').NextConfig} */
-module.exports = (phase) => ({
+const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@keysmasher/shared'],
-  distDir: phase === PHASE_DEVELOPMENT_SERVER ? '.next-dev' : '.next',
-});
+  transpilePackages: ['@keysmasher/shared', 'lucide-react'],
+};
+
+module.exports = nextConfig;
