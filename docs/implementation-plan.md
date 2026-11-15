@@ -18,7 +18,7 @@
 | **FEATURE L** | **Gamification & challenges** (XP, streaks, daily goals, achievements) | **Ready for Review** | Level progression curve (1-100), 7 tier titles, XP awarding across Practice, Arena & Academy, 12 curated achievements with unlock celebrations, daily training objectives, compact header status, and full test suite (12 tests). |
 | **FEATURE M** | **Friends, ranked matches & tournaments** (Matchmaking, brackets) | **Ready for Review** | Competitive MMR rating & Elo calculation, 7 division tiers (Bronze to Grandmaster), real-time ranked matchmaking queue with simulated opponent radar, 8-player single-elimination blitz knockout cup with interactive SVG/CSS brackets and champion crowning, friends list with live status and 1v1 direct duel invites. 11 integration tests passing. |
 | **FEATURE N** | **Coding mode** (Syntax, programming languages, code symbols) | **Ready for Review** | 8 languages (TS, JS, PY, RS, GO, SQL, HTML/CSS, C++), curated idiomatic snippets & symbol drills, live syntax accuracy metrics, Enter token advancement, and 14 tests passing. |
-| **FEATURE O** | **Accessibility, performance & production readiness** (Final audit) | **Not started** | Dependencies: All previous features. |
+| **FEATURE O** | **Accessibility, performance & production readiness** (Final audit) | **Ready for Review** | WCAG 2.1 AA keyboard focus indicators, SkipToContent link, ARIA live announcer, prefers-reduced-motion, global error boundary, PWA manifest, and 157 passing tests. |
 
 ---
 
@@ -188,6 +188,30 @@
 - [x] Verify strict TypeScript typecheck across all workspaces with 0 errors.
 - [x] Verify ESLint across all workspaces with 0 warnings and 0 errors.
 - [x] Verify production Next.js build across all static and dynamic routes with exit code 0.
+
+---
+
+## Detailed Task Breakdown for FEATURE O (Accessibility, Performance & Production Readiness)
+
+- [x] Core Accessibility & Navigation Enhancements:
+  - Created `apps/web/src/components/common/SkipToContent.tsx` linking to `<main id="main-content">` for keyboard bypass (WCAG 2.4.1).
+  - Built `AccessibilityAnnouncer.tsx` providing `useAccessibility()` hook and polite/assertive ARIA live regions for screen readers.
+  - Configured high-contrast neon `:focus-visible` indicators across all interactive controls in `apps/web/src/styles/globals.css`.
+  - Added `prefers-reduced-motion` media query in `globals.css` disabling layout animations and infinite pulse glows for motion-sensitive users.
+- [x] Resilience & Error Boundaries:
+  - Built Cyberpunk-styled `apps/web/src/app/error.tsx` catching client exceptions, rendering error digests, and providing a "Try Again" recovery action.
+  - Verified 404 handler in `apps/web/src/app/not-found.tsx` with clear recovery routes to Home and Practice.
+- [x] Web App Manifest & Production SEO:
+  - Created `apps/web/public/manifest.json` with standalone display configuration, dark theme `#090d16`, and app icon declarations.
+  - Configured comprehensive Next.js metadata in `apps/web/src/app/layout.tsx` (OpenGraph, Twitter cards, keywords, manifest link).
+- [x] Automated Testing & Quality Audit:
+  - Wrote test suite in `apps/web/src/tests/FeatureO.test.tsx` (5 tests passing, 119/119 total web tests passing).
+  - Verified 38/38 tests passing in `packages/shared`.
+  - Total 157/157 tests passing across the monorepo.
+  - Verified TypeScript typecheck with 0 errors across all workspaces.
+  - Verified ESLint with 0 warnings and 0 errors across all workspaces.
+  - Verified production Next.js build across all 9 static and dynamic routes with exit code 0.
+
 
 
 
