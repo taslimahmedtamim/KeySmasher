@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { Trophy, Medal, RotateCcw, LogOut, Bot, User, Award } from 'lucide-react';
 import { MultiplayerRoom, RoomParticipant } from '@keysmasher/shared';
 import { saveRaceRecord, RaceHistoryRecord } from '@/features/leaderboard';
+import { useGamification } from '@/features/gamification';
 
 interface RacePodiumProps {
   room: MultiplayerRoom;
@@ -21,6 +22,7 @@ export function RacePodium({
   onLeaveRoom,
 }: RacePodiumProps) {
   const savedRef = useRef(false);
+  const { recordRaceCompletion } = useGamification();
 
   // Automatically record verified race match to local competition history
   useEffect(() => {
@@ -43,8 +45,13 @@ export function RacePodium({
         isWin: (me.placement || 1) === 1,
       };
       saveRaceRecord(record);
+      recordRaceCompletion({
+        placement: me.placement || 1,
+        netWpm: me.currentWpm,
+        accuracy: me.accuracy,
+      });
     }
-  }, [room, currentParticipantId]);
+  }, [room, currentParticipantId, recordRaceCompletion]);
 
   // Sort participants by placement (1, 2, 3...) or finish time / WPM
   const sorted = [...room.participants].sort((a, b) => {

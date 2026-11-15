@@ -52,9 +52,11 @@ import {
   saveSoundSettings,
 } from '@/features/typing/utils/soundEffects';
 import { PostTestCoachTip } from '@/features/coach';
+import { useGamification } from '@/features/gamification';
 
 export default function PracticePage() {
   const { user } = useAuth();
+  const { recordSessionCompletion } = useGamification();
   const [zenMode, setZenMode] = useState(false);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [isCertificateOpen, setIsCertificateOpen] = useState(false);
@@ -217,6 +219,12 @@ export default function PracticePage() {
           keyStats: metrics.keyStats,
         });
         setSessionHistory((prev) => [saved, ...prev].slice(0, 25));
+        recordSessionCompletion({
+          netWpm: metrics.netWpm,
+          accuracy: metrics.accuracy,
+          totalCharacters: metrics.totalTypedCharacters,
+          consistency: metrics.consistency,
+        });
       }
     }
   }, [
@@ -226,6 +234,7 @@ export default function PracticePage() {
     config.difficulty,
     config.durationSeconds,
     config.targetWordCount,
+    recordSessionCompletion,
   ]);
 
   const clearDrillUrlAndStorage = () => {

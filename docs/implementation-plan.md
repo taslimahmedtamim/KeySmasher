@@ -15,7 +15,7 @@
 | **FEATURE I** | **Real-time multiplayer infrastructure** (Node.js & WebSocket service) | **Ready for Review** | Standalone WebSocket service (`apps/realtime`), room lifecycle manager, heartbeat, anti-cheat validation, AI ghost typist runner. 102 unit/integration tests passing. |
 | **FEATURE J** | **Multiplayer typing races** (Synchronized lobbies, countdowns, race) | **Ready for Review** | Private battle lobbies, 6-character room codes, synchronized 5s countdown overlay, multi-lane race track, live progress broadcast, and victory podium with rematch flow on `/compete`. |
 | **FEATURE K** | **Competition history & leaderboards** (Rankings, race records) | **Ready for Review** | Database schema migration (`rooms`, `race_results`), global leaderboards (Daily, Weekly, All-Time), international rank tiers (Bronze to Grandmaster), user competition stats card, match history timeline, auto-record on podium finish. 112 tests passing. |
-| **FEATURE L** | **Gamification & challenges** (XP, streaks, daily goals, achievements) | **Not started** | Dependencies: Feature F, K. |
+| **FEATURE L** | **Gamification & challenges** (XP, streaks, daily goals, achievements) | **Ready for Review** | Level progression curve (1-100), 7 tier titles, XP awarding across Practice, Arena & Academy, 12 curated achievements with unlock celebrations, daily training objectives, compact header status, and full test suite (12 tests). |
 | **FEATURE M** | **Friends, ranked matches & tournaments** (Matchmaking, brackets) | **Not started** | Dependencies: Feature K, L. |
 | **FEATURE N** | **Coding mode** (Syntax, programming languages, code symbols) | **Not started** | Dependencies: Feature B, C. |
 | **FEATURE O** | **Accessibility, performance & production readiness** (Final audit) | **Not started** | Dependencies: All previous features. |
@@ -98,6 +98,39 @@
 - [x] Write test suite in `apps/web/src/tests/FeatureK.test.tsx` (10 tests passing).
 - [x] Verify strict TypeScript typecheck and ESLint with 0 errors and 0 warnings.
 - [x] Verify production build across all static and dynamic routes.
+
+---
+
+## Detailed Task Breakdown for FEATURE L (Gamification, Leveling Curve & Achievements)
+
+- [x] Define domain types in `apps/web/src/features/gamification/types.ts`:
+  - `Achievement`, `AchievementCategory` (speed, accuracy, volume, streak, competition), `DailyGoal`, `UserLevelProgress`, and `GamificationState`.
+- [x] Build core gamification engine in `apps/web/src/features/gamification/gamificationEngine.ts`:
+  - Exponential XP leveling curve (`getXpRequiredForLevel`, `computeLevelProgress`) scaling levels 1 through 100+.
+  - 7 prestige titles: *Home Row Trainee*, *Cadence Striker*, *Velocity Typist*, *Keyboard Virtuoso*, *Apex Speed Demon*, *Grandmaster Smasher*, *Legendary KeySmasher*.
+  - Activity-specific XP awarding formulas for Practice tests, Arena multiplayer races (placement multipliers), and Academy course completions (star multipliers).
+  - 12 curated multi-category achievements (e.g., *Mach Speed*, *Century Breaker*, *Laser Precision*, *Perfectionist*, *Iron Stamina*, *Undefeated Gladiator*, *Podium Regular*, *Daily Habit*).
+  - Daily training goals system with automated date rollover.
+  - Safe persistent storage in `localStorage` (`keysmasher_gamification_state`).
+- [x] Build React context and state management in `apps/web/src/features/gamification/GamificationContext.tsx`:
+  - `useGamification()` hook providing level metrics, daily objectives, and achievements.
+  - Event triggers `recordSessionCompletion`, `recordRaceCompletion`, `recordLessonCompletion`.
+  - Level-up and unlock toast notification queue with auto-dismiss.
+- [x] Build gamification UI components in `apps/web/src/features/gamification/components/`:
+  - `LevelProgressBar.tsx`: Dual-mode (Full card with XP bar & achievements button, or Compact pill for the navbar).
+  - `DailyGoalsCard.tsx`: 3 daily objectives with progress bars, checkmarks, and XP badges.
+  - `AchievementsModal.tsx`: Comprehensive modal with category filtering, unlocked counters, and achievement badges.
+  - `XpGainToast.tsx`: Animated floating toast popping on XP gain and milestone unlocks.
+- [x] Integrate gamification across KeySmasher:
+  - `Header.tsx`: Integrated compact level status pill beside user profile.
+  - `dashboard/page.tsx`: Full level progression banner and daily objectives card.
+  - `practice/page.tsx`: Automated session XP and achievement recording upon test finish.
+  - `RacePodium.tsx`: Automated multiplayer race XP and placement recording.
+  - `AppProviders.tsx`: Wrapped global app with `GamificationProvider` and global modals.
+- [x] Write test suite in `apps/web/src/tests/FeatureL.test.tsx` (12 tests passing).
+- [x] Verify strict TypeScript typecheck and ESLint with 0 errors and 0 warnings.
+- [x] Verify production build across all static and dynamic routes.
+
 
 
 
