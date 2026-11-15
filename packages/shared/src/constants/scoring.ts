@@ -114,3 +114,67 @@ export function calculateConsistency(wpmSamples: number[]): number {
   return consistency;
 }
 
+/**
+ * Calculates competitive racing score combining speed (Net WPM) and accuracy (%).
+ * Formula: Math.round(netWpm * (accuracy / 100) * 10) / 10
+ * For example:
+ * - 66 WPM at 97% accuracy = 64.0 pts
+ * - 67 WPM at 88.1% accuracy = 59.0 pts
+ * High accuracy is essential to win competitive races.
+ */
+export function calculateRaceScore(netWpm: number, accuracy: number): number {
+  if (netWpm <= 0 || accuracy <= 0) return 0;
+  const accFraction = Math.max(0, Math.min(100, accuracy)) / 100;
+  return Math.round(netWpm * accFraction * 10) / 10;
+}
+
+export interface RacerRankable {
+  isFinished?: boolean;
+  currentWpm: number;
+  accuracy: number;
+  finishTimeSeconds?: number;
+  progress?: number;
+  placement?: number;
+}
+
+/**
+ * Deterministic rank comparator prioritizing Speed + Accuracy composite score.
+ * 1. Finished racers take precedence over DNF/unfinished racers.
+ * 2. Ranked by composite Race Score (Net WPM * (Accuracy / 100)).
+ * 3. Tie-breaker 1: Higher accuracy.
+ * 4. Tie-breaker 2: Higher Net WPM.
+ * 5. Tie-breaker 3: Faster finish time.
+ * 6. Tie-breaker 4: Higher progress.
+ */
+export function compareRacerRank(a: RacerRankable, b: RacerRankable): number {
+  // 1. Finished racers come first
+  if (a.isFinished && !b.isFinished) return -1;
+  if (!a.isFinished && b.isFinished) return 1;
+
+  // 2. Compare Speed + Accuracy score
+  const scoreA = calculateRaceScore(a.currentWpm, a.accuracy);
+  const scoreB = calculateRaceScore(b.currentWpm, b.accuracy);
+  if (scoreB !== scoreA) {
+    return scoreB - scoreA;
+  }
+
+  // 3. Higher accuracy wins
+  if (b.accuracy !== a.accuracy) {
+    return b.accuracy - a.accuracy;
+  }
+
+  // 4. Higher Net WPM wins
+  if (b.currentWpm !== a.currentWpm) {
+    return b.currentWpm - a.currentWpm;
+  }
+
+  // 5. Faster finish time wins
+  if (a.finishTimeSeconds && b.finishTimeSeconds && a.finishTimeSeconds !== b.finishTimeSeconds) {
+    return a.finishTimeSeconds - b.finishTimeSeconds;
+  }
+
+  // 6. Higher progress wins
+  return (b.progress || 0) - (a.progress || 0);
+}
+
+

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { calculateTypingMetrics, calculateConsistency, STANDARD_WORD_LENGTH } from './scoring';
+import {
+  calculateTypingMetrics,
+  calculateConsistency,
+  calculateRaceScore,
+  compareRacerRank,
+  STANDARD_WORD_LENGTH,
+} from './scoring';
 
 describe('calculateTypingMetrics', () => {
   it('should verify standard word length is 5', () => {
@@ -99,6 +105,39 @@ describe('calculateConsistency', () => {
     const steady = calculateConsistency([60, 62, 61, 59, 60]);
     const erratic = calculateConsistency([20, 90, 30, 100, 15]);
     expect(erratic).toBeLessThan(steady);
+  });
+
+  describe('calculateRaceScore & compareRacerRank', () => {
+    it('computes composite race score combining speed and accuracy', () => {
+      // 66 WPM with 97% accuracy = 64.0 pts
+      expect(calculateRaceScore(66, 97)).toBe(64);
+      // 67 WPM with 88.1% accuracy = 59.0 pts
+      expect(calculateRaceScore(67, 88.1)).toBe(59);
+      // 100 WPM with 100% accuracy = 100 pts
+      expect(calculateRaceScore(100, 100)).toBe(100);
+      // 0 WPM
+      expect(calculateRaceScore(0, 95)).toBe(0);
+    });
+
+    it('ranks higher accuracy over slightly higher speed when composite score is greater', () => {
+      const userRacer = {
+        isFinished: true,
+        currentWpm: 67,
+        accuracy: 88.1,
+        finishTimeSeconds: 21.1,
+      };
+      const botRacer = {
+        isFinished: true,
+        currentWpm: 66,
+        accuracy: 97.0,
+        finishTimeSeconds: 24.0,
+      };
+
+      // botRacer (64.0 pts) beats userRacer (59.0 pts)
+      const racers = [userRacer, botRacer].sort(compareRacerRank);
+      expect(racers[0]).toBe(botRacer);
+      expect(racers[1]).toBe(userRacer);
+    });
   });
 });
 

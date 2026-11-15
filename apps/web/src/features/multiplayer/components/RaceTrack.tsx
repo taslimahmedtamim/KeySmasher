@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Bot, User, Trophy, Flag, Zap, Car } from 'lucide-react';
-import { RoomParticipant } from '@keysmasher/shared';
+import { RoomParticipant, compareRacerRank } from '@keysmasher/shared';
 
 interface RaceTrackProps {
   participants: RoomParticipant[];
@@ -10,18 +10,11 @@ interface RaceTrackProps {
 }
 
 export function RaceTrack({ participants, currentParticipantId }: RaceTrackProps) {
-  // Sort for rank determination (Finished racers first by placement, then by progress)
-  const sortedByProgress = [...participants].sort((a, b) => {
-    if (a.isFinished && b.isFinished) {
-      return (a.placement || 99) - (b.placement || 99);
-    }
-    if (a.isFinished) return -1;
-    if (b.isFinished) return 1;
-    return b.progress - a.progress;
-  });
+  // Sort for rank determination based on Speed + Accuracy composite score
+  const sortedByRank = [...participants].sort(compareRacerRank);
 
   const getRank = (id: string): number => {
-    const idx = sortedByProgress.findIndex((p) => p.id === id);
+    const idx = sortedByRank.findIndex((p) => p.id === id);
     return idx >= 0 ? idx + 1 : participants.length;
   };
 

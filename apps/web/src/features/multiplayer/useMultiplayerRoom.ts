@@ -11,6 +11,7 @@ import {
   RoomParticipant,
   WsMessage,
   calculateBotProgress,
+  compareRacerRank,
   generatePassage,
   generateRoomCode,
 } from '@keysmasher/shared';
@@ -496,13 +497,26 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
                 finishTimeSeconds: isFinishingNow
                   ? Math.round(elapsedSeconds * 10) / 10
                   : p.finishTimeSeconds,
-                placement: isFinishingNow
-                  ? prev.participants.filter((x) => x.isFinished).length + 1
-                  : p.placement,
               };
             });
 
+            // Dynamically assign placements among finished racers by Speed + Accuracy composite score
+            const finishedRacers = updated
+              .filter((x) => x.isFinished)
+              .sort(compareRacerRank);
+
+            finishedRacers.forEach((x, idx) => {
+              x.placement = idx + 1;
+            });
+
             const allFinished = updated.every((p) => p.isFinished);
+            if (allFinished) {
+              const finalSorted = [...updated].sort(compareRacerRank);
+              finalSorted.forEach((x, idx) => {
+                x.placement = idx + 1;
+              });
+            }
+
             return {
               ...prev,
               status: allFinished ? 'FINISHED' : prev.status,
@@ -562,8 +576,6 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
       // Local simulated race finish
       setRoom((prev) => {
         if (!prev) return null;
-        const currentFinished = prev.participants.filter((p) => p.isFinished).length;
-        const myPlacement = currentFinished + 1;
 
         const updated = prev.participants.map((p) =>
           p.id === participantIdRef.current
@@ -574,12 +586,27 @@ export function useMultiplayerRoom(): UseMultiplayerRoomReturn {
                 currentWpm: Math.round(submission.finalWpm),
                 accuracy: Math.round(submission.accuracy * 10) / 10,
                 finishTimeSeconds: Math.round(submission.durationSeconds * 10) / 10,
-                placement: myPlacement,
               }
             : p
         );
 
+        // Dynamically assign placements among finished racers by Speed + Accuracy composite score
+        const finishedRacers = updated
+          .filter((x) => x.isFinished)
+          .sort(compareRacerRank);
+
+        finishedRacers.forEach((x, idx) => {
+          x.placement = idx + 1;
+        });
+
         const allFinished = updated.every((p) => p.isFinished);
+        if (allFinished) {
+          const finalSorted = [...updated].sort(compareRacerRank);
+          finalSorted.forEach((x, idx) => {
+            x.placement = idx + 1;
+          });
+        }
+
         return {
           ...prev,
           status: allFinished ? 'FINISHED' : prev.status,

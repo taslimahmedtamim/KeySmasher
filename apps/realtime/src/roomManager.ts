@@ -6,6 +6,7 @@ import {
   RoomConfig,
   RoomParticipant,
   calculateBotProgress,
+  compareRacerRank,
   generatePassage,
   generateRoomCode,
   validateRaceSubmission,
@@ -365,8 +366,12 @@ export class RoomManager {
         if (tick.isFinished && !bot.isFinished) {
           bot.isFinished = true;
           bot.finishTimeSeconds = Math.round(elapsedSeconds * 10) / 10;
-          const currentFinishedCount = room.participants.filter((p) => p.isFinished).length;
-          bot.placement = currentFinishedCount;
+
+          // Assign placements among finished racers by Speed + Accuracy composite score
+          const finishedRacers = room.participants.filter((p) => p.isFinished).sort(compareRacerRank);
+          finishedRacers.forEach((p, idx) => {
+            p.placement = idx + 1;
+          });
 
           broadcast(room.code, 'race:player_finished', {
             participantId: bot.id,
@@ -386,6 +391,13 @@ export class RoomManager {
         clearInterval(botInterval);
         this.botTimers.delete(room.code);
         room.status = 'FINISHED';
+
+        // Finalize all placements strictly by Speed + Accuracy
+        const finalSorted = [...room.participants].sort(compareRacerRank);
+        finalSorted.forEach((p, idx) => {
+          p.placement = idx + 1;
+        });
+
         broadcast(room.code, 'race:all_finished', {
           finalResults: room.participants,
         });
@@ -448,9 +460,11 @@ export class RoomManager {
     participant.accuracy = Math.round(submission.accuracy * 10) / 10;
     participant.finishTimeSeconds = Math.round(submission.durationSeconds * 10) / 10;
 
-    // Assign placement based on finishing order
-    const finishedCount = room.participants.filter((p) => p.isFinished).length;
-    participant.placement = finishedCount;
+    // Assign placement dynamically based on Speed + Accuracy composite score
+    const finishedRacers = room.participants.filter((p) => p.isFinished).sort(compareRacerRank);
+    finishedRacers.forEach((p, idx) => {
+      p.placement = idx + 1;
+    });
 
     broadcast(room.code, 'race:player_finished', {
       participantId: participant.id,
@@ -465,13 +479,20 @@ export class RoomManager {
     if (allFinished) {
       this.clearRoomTimers(room.code);
       room.status = 'FINISHED';
+
+      // Finalize all placements strictly by Speed + Accuracy
+      const finalSorted = [...room.participants].sort(compareRacerRank);
+      finalSorted.forEach((p, idx) => {
+        p.placement = idx + 1;
+      });
+
       broadcast(room.code, 'race:all_finished', {
         finalResults: room.participants,
       });
     }
 
     broadcast(room.code, 'room:state_update', room);
-    return { room, placement: participant.placement };
+    return { room, placement: participant.placement || 1 };
   }
 
   /**

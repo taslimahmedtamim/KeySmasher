@@ -374,5 +374,51 @@ describe('Feature I & J: Real-Time Multiplayer Arena & Races', () => {
       fireEvent.click(rematchBtn);
       expect(onRematchMock).toHaveBeenCalled();
     });
+
+    it('ranks racers by Speed + Accuracy composite score (accuracy beats sloppy speed)', () => {
+      const accuracyTestRoom: MultiplayerRoom = {
+        ...finishedRoom,
+        participants: [
+          {
+            id: 'user-sloppy',
+            username: 'SloppySpeedTypist',
+            isHost: true,
+            isReady: true,
+            progress: 100,
+            currentWpm: 67,
+            accuracy: 88.1,
+            isFinished: true,
+            finishTimeSeconds: 21.1,
+          },
+          {
+            id: 'bot-accurate',
+            username: 'AccurateCadenceBot',
+            isHost: false,
+            isReady: true,
+            progress: 100,
+            currentWpm: 66,
+            accuracy: 97.0,
+            isFinished: true,
+            finishTimeSeconds: 24.0,
+            isBot: true,
+          },
+        ],
+      };
+
+      render(
+        <RacePodium
+          room={accuracyTestRoom}
+          currentParticipantId="user-sloppy"
+          isHost={true}
+          onRematch={vi.fn()}
+          onLeaveRoom={vi.fn()}
+        />
+      );
+
+      // AccurateCadenceBot (64.0 pts) ranks #1 on podium and table
+      expect(screen.getAllByText(/AccurateCadenceBot/i).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/64 pts/i).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/59 pts/i).length).toBeGreaterThanOrEqual(1);
+    });
   });
 });
