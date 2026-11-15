@@ -1,0 +1,19 @@
+{
+  "name": "@keysmasher/realtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "KeySmasher Real-Time WebSocket Race Service",
+  "main": "./dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@keysmasher/shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}

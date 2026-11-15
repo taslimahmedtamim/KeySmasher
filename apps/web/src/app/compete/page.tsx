@@ -1,95 +1,276 @@
 'use client';
 
-import React from 'react';
-import { Swords, Plus, Key, Trophy, Users, ShieldAlert, Radio } from 'lucide-react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import {
+  Swords,
+  Plus,
+  Key,
+  Trophy,
+  Radio,
+  Bot,
+  AlertCircle,
+  Sparkles,
+  Shield,
+  Zap,
+} from 'lucide-react';
+import {
+  useMultiplayerRoom,
+  RoomCreateModal,
+  RoomJoinCard,
+  RoomLobbyView,
+  RaceCountdownOverlay,
+  RaceArena,
+  RacePodium,
+} from '@/features/multiplayer';
+
+function CompeteContent() {
+  const searchParams = useSearchParams();
+  const initialRoomCode = searchParams.get('room');
+
+  const {
+    room,
+    currentParticipant,
+    isHost,
+    connectionStatus,
+    countdownRemaining,
+    chatMessages,
+    error,
+    clearError,
+    createRoom,
+    joinRoom,
+    leaveRoom,
+    toggleReady,
+    addBot,
+    kickBot,
+    startRace,
+    sendProgress,
+    sendFinish,
+    sendRematch,
+    sendChat,
+  } = useMultiplayerRoom();
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+
+  // Auto-join if room code exists in URL
+  useEffect(() => {
+    if (initialRoomCode && !room) {
+      joinRoom(initialRoomCode);
+    }
+  }, [initialRoomCode, room, joinRoom]);
+
+  const handleJoin = async (code: string): Promise<boolean> => {
+    setIsJoining(true);
+    try {
+      return await joinRoom(code);
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const handleInstantBotMatch = async () => {
+    const success = await createRoom({
+      mode: 'words',
+      targetWords: 25,
+      difficulty: 'intermediate',
+    });
+    if (success) {
+      // Room creates with 1 bot by default; add a second faster bot for instant competitive thrill!
+      setTimeout(() => {
+        addBot('hard');
+      }, 100);
+    }
+  };
+
+  return (
+    <div className="pt-6 pb-28 sm:pt-8 sm:pb-36 min-h-screen">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Error Toast Alert */}
+        {error && (
+          <div className="mb-6 flex items-center justify-between rounded-xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-300 shadow-lg animate-fade-in">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+              <span>{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={clearError}
+              className="text-xs font-bold uppercase tracking-wider text-rose-400 hover:text-white"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* 1. ROOM ACTIVE STATES */}
+        {room ? (
+          <div>
+            {/* Synchronized Countdown Overlay */}
+            {room.status === 'COUNTDOWN' && (
+              <RaceCountdownOverlay secondsRemaining={countdownRemaining} />
+            )}
+
+            {/* WAITING: In Lobby */}
+            {room.status === 'WAITING' && (
+              <RoomLobbyView
+                room={room}
+                currentParticipantId={currentParticipant?.id || ''}
+                isHost={isHost}
+                onStartRace={startRace}
+                onToggleReady={() => toggleReady()}
+                onLeaveRoom={leaveRoom}
+                onAddBot={addBot}
+                onKickBot={kickBot}
+                chatMessages={chatMessages}
+                onSendChat={sendChat}
+                connectionStatus={connectionStatus}
+              />
+            )}
+
+            {/* COUNTDOWN or RACING: In Live Arena */}
+            {(room.status === 'COUNTDOWN' || room.status === 'RACING') && (
+              <RaceArena
+                room={room}
+                currentParticipantId={currentParticipant?.id || ''}
+                onSendProgress={sendProgress}
+                onSendFinish={sendFinish}
+                onLeaveRoom={leaveRoom}
+              />
+            )}
+
+            {/* FINISHED: Podium Rankings */}
+            {room.status === 'FINISHED' && (
+              <RacePodium
+                room={room}
+                currentParticipantId={currentParticipant?.id || ''}
+                isHost={isHost}
+                onRematch={sendRematch}
+                onLeaveRoom={leaveRoom}
+              />
+            )}
+          </div>
+        ) : (
+          /* 2. ARENA HUB (No room joined yet) */
+          <div className="space-y-8 animate-fade-in">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-surface-border pb-6 gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-semibold text-purple-300">
+                  <Swords className="h-3.5 w-3.5" />
+                  <span>Real-Time Multiplayer Arena</span>
+                </div>
+                <h1 className="mt-3 text-3xl font-extrabold text-white sm:text-4xl">
+                  Competitive Typing Battles
+                </h1>
+                <p className="mt-1 text-sm text-slate-400">
+                  Race live against friends, classmates, or global typists with server-synchronized timing.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleInstantBotMatch}
+                  className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2.5 text-sm font-bold text-cyan-300 hover:bg-cyan-500/20 transition-all"
+                >
+                  <Bot className="h-4 w-4" />
+                  <span>Practice vs AI Ghost</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-neon-purple transition-all hover:bg-purple-500"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Create Private Room</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Join Card Banner */}
+            <div className="max-w-2xl">
+              <RoomJoinCard onJoin={handleJoin} isLoading={isJoining} />
+            </div>
+
+            {/* Battle Features & Modes */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 pt-4">
+              <div className="rounded-2xl border border-surface-border bg-surface p-6 shadow-xl">
+                <div className="mb-4 inline-flex rounded-xl bg-purple-500/10 p-3 text-purple-400 border border-purple-500/20">
+                  <Key className="h-6 w-6" />
+                </div>
+                <h2 className="text-lg font-bold text-white">Private Battle Lobbies</h2>
+                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+                  Generate instant 6-character room codes. Choose word count, time duration, vocabulary difficulty, and customize punctuation or numbers.
+                </p>
+                <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                  <Zap className="h-3.5 w-3.5" />
+                  <span>Live & Ready</span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-surface-border bg-surface p-6 shadow-xl">
+                <div className="mb-4 inline-flex rounded-xl bg-cyan-500/10 p-3 text-cyan-400 border border-cyan-500/20">
+                  <Radio className="h-6 w-6" />
+                </div>
+                <h2 className="text-lg font-bold text-white">Synchronized Multi-Lane Race</h2>
+                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+                  Synchronized 5-second countdowns, subpixel hardware-accelerated typing caret, live progress broadcast, and multi-lane overtaking telemetry.
+                </p>
+                <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-cyan-400">
+                  <Zap className="h-3.5 w-3.5" />
+                  <span>Live & Ready</span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-surface-border bg-surface p-6 shadow-xl">
+                <div className="mb-4 inline-flex rounded-xl bg-amber-500/10 p-3 text-amber-400 border border-amber-500/20">
+                  <Trophy className="h-6 w-6" />
+                </div>
+                <h2 className="text-lg font-bold text-white">Victory Podium & Rankings</h2>
+                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+                  Gold, Silver, Bronze victory podium with complete finish time breakdowns, WPM, and 1-click Rematch flow for non-stop battles.
+                </p>
+                <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-amber-400">
+                  <Trophy className="h-3.5 w-3.5" />
+                  <span>Live & Ready</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Fair Play & Anti-Cheat Notice */}
+            <div className="rounded-2xl border border-surface-border/60 bg-surface-muted/30 p-5 flex items-center gap-4 text-xs text-slate-400">
+              <Shield className="h-5 w-5 text-purple-400 shrink-0" />
+              <div>
+                <span className="font-bold text-slate-300">Server-Authoritative Anti-Cheat Enabled: </span>
+                All race starts, durations, character counts, and submissions are validated against standard touch-typing physical speed bounds.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create Room Modal */}
+        <RoomCreateModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onCreate={createRoom}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function CompetePage() {
   return (
-    <div className="pt-6 pb-28 sm:pt-8 sm:pb-36">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-surface-border pb-6">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-semibold text-purple-300">
-              <Swords className="h-3.5 w-3.5" />
-              <span>Real-Time Multiplayer Arena</span>
-            </div>
-            <h1 className="mt-3 text-3xl font-extrabold text-white sm:text-4xl">
-              Competitive Typing Battles
-            </h1>
-            <p className="mt-1 text-sm text-slate-400">
-              Compete live against friends, classmates, or global typists in private and public rooms.
-            </p>
-          </div>
-
-          <div className="mt-4 flex items-center gap-3 md:mt-0">
-            <button
-              type="button"
-              onClick={() => alert('Multiplayer room creation will be active in Feature I & J.')}
-              className="flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-bold text-white shadow-neon-purple transition-all hover:bg-purple-500"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Create Private Room</span>
-            </button>
-          </div>
+    <Suspense
+      fallback={
+        <div className="flex h-96 items-center justify-center text-sm font-semibold text-slate-400">
+          Loading Arena...
         </div>
-
-        {/* Feature roadmap cards */}
-        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="rounded-2xl border border-surface-border bg-surface p-6">
-            <div className="mb-4 inline-flex rounded-xl bg-purple-500/10 p-3 text-purple-400">
-              <Key className="h-6 w-6" />
-            </div>
-            <h2 className="text-lg font-bold text-white">Private Rooms</h2>
-            <p className="mt-2 text-sm text-slate-400">
-              Generate 6-character room codes, invite friends, and customize passage length and difficulty.
-            </p>
-            <div className="mt-4 text-xs font-semibold text-slate-500">Scheduled: Feature I</div>
-          </div>
-
-          <div className="rounded-2xl border border-surface-border bg-surface p-6">
-            <div className="mb-4 inline-flex rounded-xl bg-cyan-500/10 p-3 text-cyan-400">
-              <Radio className="h-6 w-6" />
-            </div>
-            <h2 className="text-lg font-bold text-white">Synchronized Races</h2>
-            <p className="mt-2 text-sm text-slate-400">
-              Server-authoritative synchronized countdowns, live player progress bars, and instant finish rankings.
-            </p>
-            <div className="mt-4 text-xs font-semibold text-slate-500">Scheduled: Feature J</div>
-          </div>
-
-          <div className="rounded-2xl border border-surface-border bg-surface p-6">
-            <div className="mb-4 inline-flex rounded-xl bg-amber-500/10 p-3 text-amber-400">
-              <Trophy className="h-6 w-6" />
-            </div>
-            <h2 className="text-lg font-bold text-white">Global Leaderboards</h2>
-            <p className="mt-2 text-sm text-slate-400">
-              Persistent race records, Elo-based competitive matchmaking, and weekly division tournaments.
-            </p>
-            <div className="mt-4 text-xs font-semibold text-slate-500">Scheduled: Feature K & M</div>
-          </div>
-        </div>
-
-        {/* Join room placeholder */}
-        <div className="mt-8 rounded-2xl border border-surface-border bg-surface/50 p-6">
-          <h2 className="text-base font-bold text-white">Join with Room Code</h2>
-          <div className="mt-3 flex max-w-md gap-3">
-            <input
-              type="text"
-              placeholder="e.g. KS-9421"
-              maxLength={8}
-              className="flex-1 rounded-xl border border-surface-border bg-surface-muted px-4 py-2.5 text-sm uppercase tracking-wider text-white placeholder-slate-500 focus:border-purple-400 focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => alert('Multiplayer socket service will connect in Feature I.')}
-              className="rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-purple-500"
-            >
-              Join
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      }
+    >
+      <CompeteContent />
+    </Suspense>
   );
 }

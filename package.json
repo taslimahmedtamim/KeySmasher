@@ -9,7 +9,9 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=apps/web",
-    "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/web",
+    "dev:realtime": "node apps/realtime/dist/server.js",
+    "start:realtime": "npm run start --workspace=apps/realtime",
+    "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/realtime && npm run build --workspace=apps/web",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
