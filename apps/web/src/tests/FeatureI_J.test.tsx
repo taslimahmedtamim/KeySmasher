@@ -40,7 +40,7 @@ describe('Feature I & J: Real-Time Multiplayer Arena & Races', () => {
     it('renders the competitive multiplayer arena hub when not in a room', () => {
       render(<CompetePage />);
 
-      expect(screen.getByText(/Competitive Typing Battles/i)).toBeInTheDocument();
+      expect(screen.getByText(/Competitive Typing/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Create Private Room/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Practice vs AI Ghost/i })).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/e.g. KS-9421 or B4X9Q1/i)).toBeInTheDocument();

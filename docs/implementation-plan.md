@@ -14,7 +14,7 @@
 | **FEATURE H** | **Smart typing coach** (Rule-based recommendation engine, weak keys) | **Approved** | Weak-key diagnostics, confusion matrix, finger load balance, rule-based coaching advice, visual keyboard heatmap, 1-click targeted drill generator, Monkeytype-style speed chart, mechanical keyboard audio engine. Approved by user. |
 | **FEATURE I** | **Real-time multiplayer infrastructure** (Node.js & WebSocket service) | **Ready for Review** | Standalone WebSocket service (`apps/realtime`), room lifecycle manager, heartbeat, anti-cheat validation, AI ghost typist runner. 102 unit/integration tests passing. |
 | **FEATURE J** | **Multiplayer typing races** (Synchronized lobbies, countdowns, race) | **Ready for Review** | Private battle lobbies, 6-character room codes, synchronized 5s countdown overlay, multi-lane race track, live progress broadcast, and victory podium with rematch flow on `/compete`. |
-| **FEATURE K** | **Competition history & leaderboards** (Rankings, race records) | **Not started** | Dependencies: Feature J. |
+| **FEATURE K** | **Competition history & leaderboards** (Rankings, race records) | **Ready for Review** | Database schema migration (`rooms`, `race_results`), global leaderboards (Daily, Weekly, All-Time), international rank tiers (Bronze to Grandmaster), user competition stats card, match history timeline, auto-record on podium finish. 112 tests passing. |
 | **FEATURE L** | **Gamification & challenges** (XP, streaks, daily goals, achievements) | **Not started** | Dependencies: Feature F, K. |
 | **FEATURE M** | **Friends, ranked matches & tournaments** (Matchmaking, brackets) | **Not started** | Dependencies: Feature K, L. |
 | **FEATURE N** | **Coding mode** (Syntax, programming languages, code symbols) | **Not started** | Dependencies: Feature B, C. |
@@ -74,6 +74,31 @@
 - [x] Write integration test suite in `apps/web/src/tests/FeatureI_J.test.tsx` (10 tests passing).
 - [x] Verify strict TypeScript typecheck and ESLint across all 3 workspaces with 0 errors and 0 warnings.
 - [x] Verify production build across all static and dynamic routes.
+
+---
+
+## Detailed Task Breakdown for FEATURE K (Competition History & Leaderboards)
+
+- [x] Create database migration in `supabase/migrations/20261115000000_multiplayer_records_leaderboards.sql`:
+  - `rooms` table with code, host, config, and status.
+  - `race_results` table storing placement, net WPM, raw WPM, accuracy, duration, and completion timestamp.
+  - RLS policies allowing public reads and authenticated user writes.
+- [x] Build rank tier calculation and services in `apps/web/src/features/leaderboard`:
+  - `calculateRankTier(netWpm)` mapping speeds to Bronze (<40), Silver (40-59), Gold (60-79), Platinum (80-99), Diamond (100-119), Master (120-139), and Grandmaster (140+).
+  - `computeCompetitionStats()` computing total battles, wins, podiums (1st/2nd/3rd), win rate percentage, and peak race speed.
+  - `getGlobalLeaderboard()` sorting typists descending by verified Net WPM, filtering by period (Daily, Weekly, All-Time), and dynamically highlighting the current user's placement.
+  - Persistent localStorage race recording (`keysmasher_race_history`).
+- [x] Build UI components in `apps/web/src/features/leaderboard/components`:
+  - `UserCompetitionStatsCard.tsx`: Displays rank tier jewel badge, division name, and 4 KPI readouts (Peak Race WPM, Win Rate, Podiums, Avg Speed).
+  - `LeaderboardTable.tsx`: Full responsive ranking table with Daily / Weekly / All-Time period toggle, Gold/Silver/Bronze highlight badges, avatar initials, and dynamic `(You)` highlight row.
+  - `RecentBattlesList.tsx`: Timeline list of completed matches showing placement, room code, speed, accuracy, and timestamp, with an empty state prompting new races.
+- [x] Connect match results saving to `RacePodium.tsx` so completed races are automatically persisted to the competitor's match history.
+- [x] Integrate sub-tabs into `/compete` (`apps/web/src/app/compete/page.tsx`):
+  - "Battle Arena", "Global Leaderboards", and "My Battle History".
+- [x] Write test suite in `apps/web/src/tests/FeatureK.test.tsx` (10 tests passing).
+- [x] Verify strict TypeScript typecheck and ESLint with 0 errors and 0 warnings.
+- [x] Verify production build across all static and dynamic routes.
+
 
 
 

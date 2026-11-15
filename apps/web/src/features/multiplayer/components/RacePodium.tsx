@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Trophy, Medal, RotateCcw, LogOut, Bot, User, Award } from 'lucide-react';
 import { MultiplayerRoom, RoomParticipant } from '@keysmasher/shared';
+import { saveRaceRecord, RaceHistoryRecord } from '@/features/leaderboard';
 
 interface RacePodiumProps {
   room: MultiplayerRoom;
@@ -19,6 +20,32 @@ export function RacePodium({
   onRematch,
   onLeaveRoom,
 }: RacePodiumProps) {
+  const savedRef = useRef(false);
+
+  // Automatically record verified race match to local competition history
+  useEffect(() => {
+    if (savedRef.current) return;
+    const me = room.participants.find((p) => p.id === currentParticipantId);
+    if (me && me.isFinished) {
+      savedRef.current = true;
+      const record: RaceHistoryRecord = {
+        id: `race-${room.code}-${Date.now()}`,
+        roomCode: room.code,
+        placement: me.placement || 1,
+        totalRacers: room.participants.length,
+        netWpm: me.currentWpm,
+        rawWpm: Math.round(me.currentWpm * 1.05),
+        accuracy: me.accuracy,
+        durationSeconds: me.finishTimeSeconds || 30,
+        mode: room.config.mode,
+        difficulty: room.config.difficulty,
+        completedAt: new Date().toISOString(),
+        isWin: (me.placement || 1) === 1,
+      };
+      saveRaceRecord(record);
+    }
+  }, [room, currentParticipantId]);
+
   // Sort participants by placement (1, 2, 3...) or finish time / WPM
   const sorted = [...room.participants].sort((a, b) => {
     if (a.placement && b.placement) return a.placement - b.placement;

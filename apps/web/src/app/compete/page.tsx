@@ -10,9 +10,10 @@ import {
   Radio,
   Bot,
   AlertCircle,
-  Sparkles,
   Shield,
   Zap,
+  History,
+  Medal,
 } from 'lucide-react';
 import {
   useMultiplayerRoom,
@@ -23,10 +24,21 @@ import {
   RaceArena,
   RacePodium,
 } from '@/features/multiplayer';
+import {
+  LeaderboardPeriod,
+  UserCompetitionStatsCard,
+  LeaderboardTable,
+  RecentBattlesList,
+  computeCompetitionStats,
+  getGlobalLeaderboard,
+  getStoredRaceHistory,
+} from '@/features/leaderboard';
+import { useAuth } from '@/features/auth/AuthContext';
 
 function CompeteContent() {
   const searchParams = useSearchParams();
   const initialRoomCode = searchParams.get('room');
+  const { user } = useAuth();
 
   const {
     room,
@@ -50,8 +62,18 @@ function CompeteContent() {
     sendChat,
   } = useMultiplayerRoom();
 
+  const [hubTab, setHubTab] = useState<'arena' | 'leaderboard' | 'history'>('arena');
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState<LeaderboardPeriod>('all-time');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+  const [raceHistory, setRaceHistory] = useState(() => getStoredRaceHistory());
+
+  // Reload history when room is closed or finished
+  useEffect(() => {
+    if (!room) {
+      setRaceHistory(getStoredRaceHistory());
+    }
+  }, [room]);
 
   // Auto-join if room code exists in URL
   useEffect(() => {
@@ -76,12 +98,28 @@ function CompeteContent() {
       difficulty: 'intermediate',
     });
     if (success) {
-      // Room creates with 1 bot by default; add a second faster bot for instant competitive thrill!
       setTimeout(() => {
         addBot('hard');
       }, 100);
     }
   };
+
+  // Compute live user stats and leaderboard
+  const userStats = computeCompetitionStats(raceHistory);
+  const leaderboardEntries = getGlobalLeaderboard(
+    leaderboardPeriod,
+    'all',
+    user
+      ? {
+          id: user.id,
+          username: user.username,
+          displayName: user.displayName,
+          avatarUrl: user.avatarUrl,
+          bestWpm: userStats.bestWpm,
+          accuracy: userStats.avgAccuracy,
+        }
+      : undefined
+  );
 
   return (
     <div className="pt-6 pb-28 sm:pt-8 sm:pb-36 min-h-screen">
@@ -161,10 +199,10 @@ function CompeteContent() {
                   <span>Real-Time Multiplayer Arena</span>
                 </div>
                 <h1 className="mt-3 text-3xl font-extrabold text-white sm:text-4xl">
-                  Competitive Typing Battles
+                  Competitive Typing Arena & Rankings
                 </h1>
                 <p className="mt-1 text-sm text-slate-400">
-                  Race live against friends, classmates, or global typists with server-synchronized timing.
+                  Race live against friends, global typists, and climb the international division leaderboards.
                 </p>
               </div>
 
@@ -189,64 +227,144 @@ function CompeteContent() {
               </div>
             </div>
 
-            {/* Join Card Banner */}
-            <div className="max-w-2xl">
-              <RoomJoinCard onJoin={handleJoin} isLoading={isJoining} />
+            {/* Navigation Tabs (Battle Arena vs Global Leaderboards vs My History) */}
+            <div className="flex items-center border-b border-surface-border gap-6 text-sm font-bold">
+              <button
+                type="button"
+                onClick={() => setHubTab('arena')}
+                className={`flex items-center gap-2 pb-3 border-b-2 transition-all ${
+                  hubTab === 'arena'
+                    ? 'border-purple-500 text-purple-400'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                <Swords className="h-4 w-4" />
+                <span>Battle Arena</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHubTab('leaderboard')}
+                className={`flex items-center gap-2 pb-3 border-b-2 transition-all ${
+                  hubTab === 'leaderboard'
+                    ? 'border-purple-500 text-purple-400'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                <Trophy className="h-4 w-4 text-amber-400" />
+                <span>Global Leaderboards</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHubTab('history')}
+                className={`flex items-center gap-2 pb-3 border-b-2 transition-all ${
+                  hubTab === 'history'
+                    ? 'border-purple-500 text-purple-400'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                <History className="h-4 w-4 text-cyan-400" />
+                <span>My Battle History ({raceHistory.length})</span>
+              </button>
             </div>
 
-            {/* Battle Features & Modes */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 pt-4">
-              <div className="rounded-2xl border border-surface-border bg-surface p-6 shadow-xl">
-                <div className="mb-4 inline-flex rounded-xl bg-purple-500/10 p-3 text-purple-400 border border-purple-500/20">
-                  <Key className="h-6 w-6" />
+            {/* TAB CONTENT 1: BATTLE ARENA */}
+            {hubTab === 'arena' && (
+              <div className="space-y-8 animate-fade-in">
+                {/* Join Card Banner */}
+                <div className="max-w-2xl">
+                  <RoomJoinCard onJoin={handleJoin} isLoading={isJoining} />
                 </div>
-                <h2 className="text-lg font-bold text-white">Private Battle Lobbies</h2>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  Generate instant 6-character room codes. Choose word count, time duration, vocabulary difficulty, and customize punctuation or numbers.
-                </p>
-                <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-emerald-400">
-                  <Zap className="h-3.5 w-3.5" />
-                  <span>Live & Ready</span>
-                </div>
-              </div>
 
-              <div className="rounded-2xl border border-surface-border bg-surface p-6 shadow-xl">
-                <div className="mb-4 inline-flex rounded-xl bg-cyan-500/10 p-3 text-cyan-400 border border-cyan-500/20">
-                  <Radio className="h-6 w-6" />
-                </div>
-                <h2 className="text-lg font-bold text-white">Synchronized Multi-Lane Race</h2>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  Synchronized 5-second countdowns, subpixel hardware-accelerated typing caret, live progress broadcast, and multi-lane overtaking telemetry.
-                </p>
-                <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-cyan-400">
-                  <Zap className="h-3.5 w-3.5" />
-                  <span>Live & Ready</span>
-                </div>
-              </div>
+                {/* Battle Features & Modes */}
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3 pt-2">
+                  <div className="rounded-2xl border border-surface-border bg-surface p-6 shadow-xl">
+                    <div className="mb-4 inline-flex rounded-xl bg-purple-500/10 p-3 text-purple-400 border border-purple-500/20">
+                      <Key className="h-6 w-6" />
+                    </div>
+                    <h2 className="text-lg font-bold text-white">Private Battle Lobbies</h2>
+                    <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+                      Generate instant 6-character room codes. Choose word count, time duration, vocabulary difficulty, and customize punctuation or numbers.
+                    </p>
+                    <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                      <Zap className="h-3.5 w-3.5" />
+                      <span>Live & Ready</span>
+                    </div>
+                  </div>
 
-              <div className="rounded-2xl border border-surface-border bg-surface p-6 shadow-xl">
-                <div className="mb-4 inline-flex rounded-xl bg-amber-500/10 p-3 text-amber-400 border border-amber-500/20">
-                  <Trophy className="h-6 w-6" />
-                </div>
-                <h2 className="text-lg font-bold text-white">Victory Podium & Rankings</h2>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  Gold, Silver, Bronze victory podium with complete finish time breakdowns, WPM, and 1-click Rematch flow for non-stop battles.
-                </p>
-                <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-amber-400">
-                  <Trophy className="h-3.5 w-3.5" />
-                  <span>Live & Ready</span>
-                </div>
-              </div>
-            </div>
+                  <div className="rounded-2xl border border-surface-border bg-surface p-6 shadow-xl">
+                    <div className="mb-4 inline-flex rounded-xl bg-cyan-500/10 p-3 text-cyan-400 border border-cyan-500/20">
+                      <Radio className="h-6 w-6" />
+                    </div>
+                    <h2 className="text-lg font-bold text-white">Synchronized Multi-Lane Race</h2>
+                    <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+                      Synchronized 5-second countdowns, subpixel hardware-accelerated typing caret, live progress broadcast, and multi-lane overtaking telemetry.
+                    </p>
+                    <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-cyan-400">
+                      <Zap className="h-3.5 w-3.5" />
+                      <span>Live & Ready</span>
+                    </div>
+                  </div>
 
-            {/* Fair Play & Anti-Cheat Notice */}
-            <div className="rounded-2xl border border-surface-border/60 bg-surface-muted/30 p-5 flex items-center gap-4 text-xs text-slate-400">
-              <Shield className="h-5 w-5 text-purple-400 shrink-0" />
-              <div>
-                <span className="font-bold text-slate-300">Server-Authoritative Anti-Cheat Enabled: </span>
-                All race starts, durations, character counts, and submissions are validated against standard touch-typing physical speed bounds.
+                  <div className="rounded-2xl border border-surface-border bg-surface p-6 shadow-xl">
+                    <div className="mb-4 inline-flex rounded-xl bg-amber-500/10 p-3 text-amber-400 border border-amber-500/20">
+                      <Trophy className="h-6 w-6" />
+                    </div>
+                    <h2 className="text-lg font-bold text-white">Victory Podium & Rankings</h2>
+                    <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+                      Gold, Silver, Bronze victory podium with complete finish time breakdowns, WPM, and 1-click Rematch flow for non-stop battles.
+                    </p>
+                    <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-amber-400">
+                      <Trophy className="h-3.5 w-3.5" />
+                      <span>Live & Ready</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fair Play & Anti-Cheat Notice */}
+                <div className="rounded-2xl border border-surface-border/60 bg-surface-muted/30 p-5 flex items-center gap-4 text-xs text-slate-400">
+                  <Shield className="h-5 w-5 text-purple-400 shrink-0" />
+                  <div>
+                    <span className="font-bold text-slate-300">Server-Authoritative Anti-Cheat Enabled: </span>
+                    All race starts, durations, character counts, and submissions are validated against standard touch-typing physical speed bounds.
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* TAB CONTENT 2: GLOBAL LEADERBOARDS */}
+            {hubTab === 'leaderboard' && (
+              <div className="space-y-6 animate-fade-in">
+                <UserCompetitionStatsCard
+                  stats={userStats}
+                  username={user?.displayName || user?.username || 'Guest Competitor'}
+                />
+                <LeaderboardTable
+                  entries={leaderboardEntries}
+                  period={leaderboardPeriod}
+                  onPeriodChange={setLeaderboardPeriod}
+                  currentUserId={user?.id}
+                />
+              </div>
+            )}
+
+            {/* TAB CONTENT 3: MY BATTLE HISTORY */}
+            {hubTab === 'history' && (
+              <div className="space-y-6 animate-fade-in">
+                <UserCompetitionStatsCard
+                  stats={userStats}
+                  username={user?.displayName || user?.username || 'Guest Competitor'}
+                />
+                <RecentBattlesList
+                  history={raceHistory}
+                  onStartRace={() => {
+                    setHubTab('arena');
+                    handleInstantBotMatch();
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
 
