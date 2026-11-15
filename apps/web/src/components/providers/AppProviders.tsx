@@ -9,6 +9,7 @@ import {
   AchievementsModal,
   XpGainToast,
 } from '@/features/gamification';
+import { RankedProvider } from '@/features/ranked';
 
 const GamificationModals: React.FC = () => {
   const {
@@ -40,9 +41,11 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <AuthProvider>
       <GamificationProvider>
-        {children}
-        <AuthModal />
-        <GamificationModals />
+        <RankedProvider>
+          {children}
+          <AuthModal />
+          <GamificationModals />
+        </RankedProvider>
       </GamificationProvider>
     </AuthProvider>
   );

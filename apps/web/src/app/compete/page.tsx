@@ -33,6 +33,11 @@ import {
   getGlobalLeaderboard,
   getStoredRaceHistory,
 } from '@/features/leaderboard';
+import {
+  RankedQueueCard,
+  TournamentBracketView,
+  FriendsManagerCard,
+} from '@/features/ranked';
 import { useAuth } from '@/features/auth/AuthContext';
 
 function CompeteContent() {
@@ -62,7 +67,9 @@ function CompeteContent() {
     sendChat,
   } = useMultiplayerRoom();
 
-  const [hubTab, setHubTab] = useState<'arena' | 'leaderboard' | 'history'>('arena');
+  const [hubTab, setHubTab] = useState<
+    'arena' | 'ranked' | 'tournament' | 'friends' | 'leaderboard' | 'history'
+  >('arena');
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<LeaderboardPeriod>('all-time');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
@@ -227,12 +234,12 @@ function CompeteContent() {
               </div>
             </div>
 
-            {/* Navigation Tabs (Battle Arena vs Global Leaderboards vs My History) */}
-            <div className="flex items-center border-b border-surface-border gap-6 text-sm font-bold">
+            {/* Navigation Tabs (Battle Arena vs Ranked Duel vs Tournaments vs Friends vs Global Leaderboards vs My History) */}
+            <div className="flex items-center border-b border-surface-border gap-2 sm:gap-6 text-sm font-bold overflow-x-auto no-scrollbar">
               <button
                 type="button"
                 onClick={() => setHubTab('arena')}
-                className={`flex items-center gap-2 pb-3 border-b-2 transition-all ${
+                className={`flex items-center gap-2 pb-3 border-b-2 whitespace-nowrap transition-all ${
                   hubTab === 'arena'
                     ? 'border-purple-500 text-purple-400'
                     : 'border-transparent text-slate-400 hover:text-white'
@@ -244,27 +251,66 @@ function CompeteContent() {
 
               <button
                 type="button"
-                onClick={() => setHubTab('leaderboard')}
-                className={`flex items-center gap-2 pb-3 border-b-2 transition-all ${
-                  hubTab === 'leaderboard'
+                onClick={() => setHubTab('ranked')}
+                className={`flex items-center gap-2 pb-3 border-b-2 whitespace-nowrap transition-all ${
+                  hubTab === 'ranked'
+                    ? 'border-purple-500 text-purple-400'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                <Zap className="h-4 w-4 text-cyan-400" />
+                <span>Ranked Duel</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHubTab('tournament')}
+                className={`flex items-center gap-2 pb-3 border-b-2 whitespace-nowrap transition-all ${
+                  hubTab === 'tournament'
                     ? 'border-purple-500 text-purple-400'
                     : 'border-transparent text-slate-400 hover:text-white'
                 }`}
               >
                 <Trophy className="h-4 w-4 text-amber-400" />
+                <span>Tournaments</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHubTab('friends')}
+                className={`flex items-center gap-2 pb-3 border-b-2 whitespace-nowrap transition-all ${
+                  hubTab === 'friends'
+                    ? 'border-purple-500 text-purple-400'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                <Shield className="h-4 w-4 text-emerald-400" />
+                <span>Friends & Rivals</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHubTab('leaderboard')}
+                className={`flex items-center gap-2 pb-3 border-b-2 whitespace-nowrap transition-all ${
+                  hubTab === 'leaderboard'
+                    ? 'border-purple-500 text-purple-400'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                <Medal className="h-4 w-4 text-amber-300" />
                 <span>Global Leaderboards</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setHubTab('history')}
-                className={`flex items-center gap-2 pb-3 border-b-2 transition-all ${
+                className={`flex items-center gap-2 pb-3 border-b-2 whitespace-nowrap transition-all ${
                   hubTab === 'history'
                     ? 'border-purple-500 text-purple-400'
                     : 'border-transparent text-slate-400 hover:text-white'
                 }`}
               >
-                <History className="h-4 w-4 text-cyan-400" />
+                <History className="h-4 w-4 text-slate-400" />
                 <span>My Battle History ({raceHistory.length})</span>
               </button>
             </div>
@@ -333,7 +379,28 @@ function CompeteContent() {
               </div>
             )}
 
-            {/* TAB CONTENT 2: GLOBAL LEADERBOARDS */}
+            {/* TAB CONTENT: RANKED MATCHMAKING */}
+            {hubTab === 'ranked' && (
+              <div className="space-y-6 animate-fade-in">
+                <RankedQueueCard />
+              </div>
+            )}
+
+            {/* TAB CONTENT: TOURNAMENT BRACKETS */}
+            {hubTab === 'tournament' && (
+              <div className="space-y-6 animate-fade-in">
+                <TournamentBracketView />
+              </div>
+            )}
+
+            {/* TAB CONTENT: FRIENDS & RIVALS */}
+            {hubTab === 'friends' && (
+              <div className="space-y-6 animate-fade-in">
+                <FriendsManagerCard />
+              </div>
+            )}
+
+            {/* TAB CONTENT: GLOBAL LEADERBOARDS */}
             {hubTab === 'leaderboard' && (
               <div className="space-y-6 animate-fade-in">
                 <UserCompetitionStatsCard

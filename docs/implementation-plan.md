@@ -16,7 +16,7 @@
 | **FEATURE J** | **Multiplayer typing races** (Synchronized lobbies, countdowns, race) | **Ready for Review** | Private battle lobbies, 6-character room codes, synchronized 5s countdown overlay, multi-lane race track, live progress broadcast, and victory podium with rematch flow on `/compete`. |
 | **FEATURE K** | **Competition history & leaderboards** (Rankings, race records) | **Ready for Review** | Database schema migration (`rooms`, `race_results`), global leaderboards (Daily, Weekly, All-Time), international rank tiers (Bronze to Grandmaster), user competition stats card, match history timeline, auto-record on podium finish. 112 tests passing. |
 | **FEATURE L** | **Gamification & challenges** (XP, streaks, daily goals, achievements) | **Ready for Review** | Level progression curve (1-100), 7 tier titles, XP awarding across Practice, Arena & Academy, 12 curated achievements with unlock celebrations, daily training objectives, compact header status, and full test suite (12 tests). |
-| **FEATURE M** | **Friends, ranked matches & tournaments** (Matchmaking, brackets) | **Not started** | Dependencies: Feature K, L. |
+| **FEATURE M** | **Friends, ranked matches & tournaments** (Matchmaking, brackets) | **Ready for Review** | Competitive MMR rating & Elo calculation, 7 division tiers (Bronze to Grandmaster), real-time ranked matchmaking queue with simulated opponent radar, 8-player single-elimination blitz knockout cup with interactive SVG/CSS brackets and champion crowning, friends list with live status and 1v1 direct duel invites. 11 integration tests passing. |
 | **FEATURE N** | **Coding mode** (Syntax, programming languages, code symbols) | **Not started** | Dependencies: Feature B, C. |
 | **FEATURE O** | **Accessibility, performance & production readiness** (Final audit) | **Not started** | Dependencies: All previous features. |
 
@@ -130,6 +130,39 @@
 - [x] Write test suite in `apps/web/src/tests/FeatureL.test.tsx` (12 tests passing).
 - [x] Verify strict TypeScript typecheck and ESLint with 0 errors and 0 warnings.
 - [x] Verify production build across all static and dynamic routes.
+
+---
+
+## Detailed Task Breakdown for FEATURE M (Friends, Ranked Matches & Tournaments)
+
+- [x] Create domain types in `apps/web/src/features/ranked/types.ts`:
+  - `RankedDivision` (Bronze, Silver, Gold, Platinum, Diamond, Master, Grandmaster).
+  - `RankedProfile` (MMR rating, peak MMR, division, placement matches remaining, season win/loss record, streaks).
+  - `FriendUser`, `FriendRequest`, `DirectChallenge`, `MatchmakingQueueState`.
+  - `Tournament`, `TournamentMatch`, `TournamentParticipant`.
+- [x] Implement competitive ranking and tournament engine in `apps/web/src/features/ranked/rankedEngine.ts`:
+  - `getDivisionFromMmr()` & `getDivisionColor()` mapping skill brackets to visual division themes.
+  - Standard Elo rating calculation `calculateEloDelta()` with dynamic K-factors (50 for placement matches, 32 standard) scaling with opponent skill difference.
+  - Seeded 8-player single-elimination tournament generator `createStandard8PlayerTournament()` setting standard Quarterfinal brackets (1v8, 4v5, 2v7, 3v6).
+  - Match progression algorithm `advanceTournamentMatch()` dynamically advancing winners into Round 2 Semifinals and Round 3 Grand Finals, marking eliminated competitors, and crowning the champion.
+  - AI match simulator `simulateAiMatch()` correlating natural variance to opponent MMR.
+  - Safe local persistent storage (`keysmasher_ranked_profile`, `keysmasher_friends_list`, `keysmasher_active_tournaments`).
+- [x] Build React Context & Hook in `apps/web/src/features/ranked/RankedContext.tsx`:
+  - `useRankedSystem()` providing real-time profile, friends list, active tournament, and matchmaking state.
+  - Throttled radar matchmaking queue with simulated nearby-MMR opponent matching and room code assignment.
+  - Direct 1v1 challenge creator with instant room code generation.
+  - Tournament manager supporting user match resolution, AI round simulation, and XP prize awarding.
+- [x] Build UI components in `apps/web/src/features/ranked/components/`:
+  - `RankedQueueCard.tsx`: Division jewel badge, rating KPIs, win rate, win streak, pulsating radar search state, and match found modal.
+  - `TournamentBracketView.tsx`: 3-column knockout bracket (Quarterfinals -> Semifinals -> Grand Finals), match cards with seed numbers and scores, user duel runner, champion podium banner, and reset actions.
+  - `FriendsManagerCard.tsx`: Live friend roster with status badges (Online, Racing, Offline), add friend form with instant validation, 1v1 challenge trigger, and copyable duel room code modal.
+- [x] Integrate sub-tabs into `/compete` (`apps/web/src/app/compete/page.tsx`):
+  - Battle Arena, Ranked Duel, Tournaments, Friends & Rivals, Global Leaderboards, and My Battle History.
+- [x] Integrate `RankedProvider` into `apps/web/src/components/providers/AppProviders.tsx`.
+- [x] Write test suite in `apps/web/src/tests/FeatureM.test.tsx` (11 tests passing).
+- [x] Verify strict TypeScript typecheck and ESLint with 0 errors and 0 warnings across all workspaces.
+- [x] Verify Next.js production build across all static and dynamic routes.
+
 
 
 
