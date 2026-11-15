@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -10,7 +10,15 @@ import { useAuth } from '@/features/auth/AuthContext';
 export const Header: React.FC = () => {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
   const { user, isGuest, openAuthModal, signOut } = useAuth();
+
+  // Reset optimistic pending state whenever Next.js finishes navigating to the new route
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
+
+  const activeHref = pendingHref || pathname;
 
   // Primary navigation items (shown in main center nav after signin)
   const navItems = user
@@ -23,13 +31,26 @@ export const Header: React.FC = () => {
     : [];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-surface-border bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-surface-border bg-background/80 backdrop-blur-md relative">
+      {/* Sleek top neon loading bar during optimistic page transit */}
+      {pendingHref && (
+        <div
+          data-testid="nav-progress-bar"
+          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse z-50 pointer-events-none"
+        />
+      )}
+
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         {/* Brand Logo & Name */}
         <Link
           href="/"
-          className="group flex items-center gap-3 transition-opacity hover:opacity-90"
+          className="group flex items-center gap-3 transition-opacity hover:opacity-90 outline-none focus:outline-none"
           id="nav-brand-logo"
+          onClick={() => {
+            if (pathname !== '/') {
+              setPendingHref('/');
+            }
+          }}
         >
           <div className="relative h-11 w-11 sm:h-12 sm:w-12 transition-transform group-hover:scale-105 flex items-center justify-center shrink-0">
             <Image
@@ -56,7 +77,7 @@ export const Header: React.FC = () => {
           <nav className="hidden items-center gap-1 md:flex" aria-label="Main Navigation">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = activeHref === item.href;
               return (
                 <Link
                   key={item.name}
@@ -64,12 +85,14 @@ export const Header: React.FC = () => {
                   prefetch={true}
                   id={`nav-link-${item.name.toLowerCase()}`}
                   onClick={(e) => {
-                    if (isActive) {
+                    if (pathname === item.href) {
                       e.preventDefault();
                       window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      setPendingHref(item.href);
                     }
                   }}
-                  className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 active:scale-95 ${
+                  className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-150 active:scale-95 outline-none focus:outline-none focus:ring-0 ${
                     isActive
                       ? 'border border-cyan-500/40 bg-surface-muted text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
                       : 'text-slate-300 hover:bg-surface hover:text-white'
@@ -94,15 +117,17 @@ export const Header: React.FC = () => {
                 if (pathname === '/practice') {
                   e.preventDefault();
                   window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                  setPendingHref('/practice');
                 }
               }}
-              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 active:scale-95 ${
-                pathname === '/practice'
+              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-150 active:scale-95 outline-none focus:outline-none focus:ring-0 ${
+                activeHref === '/practice'
                   ? 'border border-cyan-500/40 bg-surface-muted text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
                   : 'text-slate-300 hover:bg-surface hover:text-white'
               }`}
             >
-              <Zap className={`h-4 w-4 ${pathname === '/practice' ? 'text-cyan-400' : 'text-slate-400'}`} />
+              <Zap className={`h-4 w-4 ${activeHref === '/practice' ? 'text-cyan-400' : 'text-slate-400'}`} />
               <span>Quick Test</span>
             </Link>
           )}
@@ -112,7 +137,12 @@ export const Header: React.FC = () => {
               <Link
                 href="/dashboard"
                 prefetch={true}
-                className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-surface px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-cyan-400 hover:text-white transition-colors duration-150 shadow-sm"
+                onClick={() => {
+                  if (pathname !== '/dashboard') {
+                    setPendingHref('/dashboard');
+                  }
+                }}
+                className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-surface px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-cyan-400 hover:text-white transition-colors duration-150 shadow-sm outline-none focus:outline-none"
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-300 font-bold font-mono text-[11px]">
                   {user.username.charAt(0).toUpperCase()}
@@ -168,7 +198,7 @@ export const Header: React.FC = () => {
           <div className="flex flex-col space-y-1">
             {(user ? navItems : [{ name: 'Quick Test', href: '/practice', icon: Zap }]).map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = activeHref === item.href;
               return (
                 <Link
                   key={item.name}
@@ -176,14 +206,16 @@ export const Header: React.FC = () => {
                   prefetch={true}
                   onClick={(e) => {
                     setMobileMenuOpen(false);
-                    if (isActive) {
+                    if (pathname === item.href) {
                       e.preventDefault();
                       window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      setPendingHref(item.href);
                     }
                   }}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:outline-none ${
                     isActive
-                      ? 'bg-cyan-500/10 text-cyan-400'
+                      ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
                       : 'text-slate-300 hover:bg-surface-muted hover:text-white'
                   }`}
                 >

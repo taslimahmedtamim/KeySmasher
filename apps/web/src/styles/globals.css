@@ -39,9 +39,13 @@ body,
     -webkit-tap-highlight-color: transparent !important;
   }
 
-  /* Suppress default browser outline when activated by mouse pointer */
+  /* Suppress default browser outline when activated by mouse pointer or click */
   *:focus:not(:focus-visible),
-  *:active {
+  *:active,
+  a:active,
+  button:active,
+  a:focus:not(:focus-visible),
+  button:focus:not(:focus-visible) {
     outline: none !important;
     box-shadow: none !important;
     -webkit-tap-highlight-color: transparent !important;

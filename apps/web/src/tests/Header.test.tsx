@@ -91,4 +91,32 @@ describe('Header Component', () => {
     expect(screen.queryByRole('link', { name: /Compete/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Dashboard/i })).not.toBeInTheDocument();
   });
+
+  it('optimistically switches active tab and triggers top progress bar immediately upon clicking a tab', async () => {
+    render(<TestShell />);
+
+    // Sign in first
+    const signInBtn = screen.getByRole('button', { name: /Sign In/i });
+    fireEvent.click(signInBtn);
+    const demoLoginBtn = screen.getByRole('button', { name: /Quick Demo Account/i });
+    await act(async () => {
+      fireEvent.click(demoLoginBtn);
+    });
+
+    // Check practice link
+    const practiceLink = screen.getByRole('link', { name: /Practice/i });
+    expect(practiceLink).toBeInTheDocument();
+    expect(screen.queryByTestId('nav-progress-bar')).not.toBeInTheDocument();
+
+    // Click Practice
+    await act(async () => {
+      fireEvent.click(practiceLink);
+    });
+
+    // Optimistic active highlight should instantly jump to Practice
+    expect(practiceLink.className).toContain('text-cyan-300');
+    expect(practiceLink.className).toContain('border-cyan-500/40');
+    // Top neon progress bar should be visible during transit
+    expect(screen.getByTestId('nav-progress-bar')).toBeInTheDocument();
+  });
 });
