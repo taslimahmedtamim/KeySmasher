@@ -26,6 +26,7 @@ import {
 } from '@/features/multiplayer';
 import {
   LeaderboardPeriod,
+  RaceHistoryRecord,
   UserCompetitionStatsCard,
   LeaderboardTable,
   RecentBattlesList,
@@ -73,9 +74,13 @@ function CompeteContent() {
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<LeaderboardPeriod>('all-time');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
-  const [raceHistory, setRaceHistory] = useState(() => getStoredRaceHistory());
+  const [raceHistory, setRaceHistory] = useState<RaceHistoryRecord[]>([]);
 
-  // Reload history when room is closed or finished
+  // Hydrate stored race history on client mount and when room is closed or finished
+  useEffect(() => {
+    setRaceHistory(getStoredRaceHistory());
+  }, []);
+
   useEffect(() => {
     if (!room) {
       setRaceHistory(getStoredRaceHistory());
@@ -311,7 +316,7 @@ function CompeteContent() {
                 }`}
               >
                 <History className="h-4 w-4 text-slate-400" />
-                <span>My Battle History ({raceHistory.length})</span>
+                <span suppressHydrationWarning>My Battle History ({raceHistory.length})</span>
               </button>
             </div>
 

@@ -50,17 +50,9 @@ export const RankedProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { user } = useAuth();
   const { awardXp } = useGamification();
 
-  const [rankedProfile, setRankedProfile] = useState<RankedProfile>(() => getStoredRankedProfile());
-  const [friends, setFriends] = useState<FriendUser[]>(() => getStoredFriends());
-  const [activeTournament, setActiveTournament] = useState<Tournament | null>(() => {
-    if (typeof window === 'undefined') return null;
-    try {
-      const raw = localStorage.getItem(TOURNAMENTS_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [rankedProfile, setRankedProfile] = useState<RankedProfile>(INITIAL_RANKED_PROFILE);
+  const [friends, setFriends] = useState<FriendUser[]>(INITIAL_FRIENDS_LIST);
+  const [activeTournament, setActiveTournament] = useState<Tournament | null>(null);
 
   const [queueState, setQueueState] = useState<MatchmakingQueueState>({
     isSearching: false,
@@ -73,10 +65,20 @@ export const RankedProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sync state on mount
+  // Sync state on mount (client-side only to ensure zero SSR hydration mismatch)
   useEffect(() => {
     setRankedProfile(getStoredRankedProfile());
     setFriends(getStoredFriends());
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(TOURNAMENTS_STORAGE_KEY);
+        if (raw) {
+          setActiveTournament(JSON.parse(raw));
+        }
+      } catch {
+        // ignore
+      }
+    }
   }, []);
 
   // Save tournament updates

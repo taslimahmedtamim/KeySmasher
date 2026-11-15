@@ -50,8 +50,18 @@ interface GamificationContextValue {
 
 const GamificationContext = createContext<GamificationContextValue | undefined>(undefined);
 
+const DEFAULT_GAMIFICATION_STATE: GamificationState = {
+  totalXp: 150,
+  streakDays: 1,
+  lastActiveDate: '2026-11-16',
+  dailyGoals: INITIAL_DAILY_GOALS,
+  dailyGoalsDate: '2026-11-16',
+  unlockedAchievementIds: [],
+  achievementUnlockDates: {},
+};
+
 export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<GamificationState>(() => getStoredGamificationState());
+  const [state, setState] = useState<GamificationState>(DEFAULT_GAMIFICATION_STATE);
   const [isAchievementsModalOpen, setIsAchievementsModalOpen] = useState(false);
   const [recentXpGain, setRecentXpGain] = useState<{ amount: number; reason: string } | null>(null);
   const [recentUnlock, setRecentUnlock] = useState<Achievement | null>(null);
