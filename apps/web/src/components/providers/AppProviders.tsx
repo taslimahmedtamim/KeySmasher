@@ -10,6 +10,7 @@ import {
   XpGainToast,
 } from '@/features/gamification';
 import { RankedProvider } from '@/features/ranked';
+import { AccessibilityProvider } from '@/components/common/AccessibilityAnnouncer';
 
 const GamificationModals: React.FC = () => {
   const {
@@ -39,14 +40,16 @@ const GamificationModals: React.FC = () => {
 
 export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <AuthProvider>
-      <GamificationProvider>
-        <RankedProvider>
-          {children}
-          <AuthModal />
-          <GamificationModals />
-        </RankedProvider>
-      </GamificationProvider>
-    </AuthProvider>
+    <AccessibilityProvider>
+      <AuthProvider>
+        <GamificationProvider>
+          <RankedProvider>
+            {children}
+            <AuthModal />
+            <GamificationModals />
+          </RankedProvider>
+        </GamificationProvider>
+      </AuthProvider>
+    </AccessibilityProvider>
   );
 };
