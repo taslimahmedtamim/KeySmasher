@@ -17,7 +17,7 @@
 | **FEATURE K** | **Competition history & leaderboards** (Rankings, race records) | **Ready for Review** | Database schema migration (`rooms`, `race_results`), global leaderboards (Daily, Weekly, All-Time), international rank tiers (Bronze to Grandmaster), user competition stats card, match history timeline, auto-record on podium finish. 112 tests passing. |
 | **FEATURE L** | **Gamification & challenges** (XP, streaks, daily goals, achievements) | **Ready for Review** | Level progression curve (1-100), 7 tier titles, XP awarding across Practice, Arena & Academy, 12 curated achievements with unlock celebrations, daily training objectives, compact header status, and full test suite (12 tests). |
 | **FEATURE M** | **Friends, ranked matches & tournaments** (Matchmaking, brackets) | **Ready for Review** | Competitive MMR rating & Elo calculation, 7 division tiers (Bronze to Grandmaster), real-time ranked matchmaking queue with simulated opponent radar, 8-player single-elimination blitz knockout cup with interactive SVG/CSS brackets and champion crowning, friends list with live status and 1v1 direct duel invites. 11 integration tests passing. |
-| **FEATURE N** | **Coding mode** (Syntax, programming languages, code symbols) | **Not started** | Dependencies: Feature B, C. |
+| **FEATURE N** | **Coding mode** (Syntax, programming languages, code symbols) | **Ready for Review** | 8 languages (TS, JS, PY, RS, GO, SQL, HTML/CSS, C++), curated idiomatic snippets & symbol drills, live syntax accuracy metrics, Enter token advancement, and 14 tests passing. |
 | **FEATURE O** | **Accessibility, performance & production readiness** (Final audit) | **Not started** | Dependencies: All previous features. |
 
 ---
@@ -162,6 +162,33 @@
 - [x] Write test suite in `apps/web/src/tests/FeatureM.test.tsx` (11 tests passing).
 - [x] Verify strict TypeScript typecheck and ESLint with 0 errors and 0 warnings across all workspaces.
 - [x] Verify Next.js production build across all static and dynamic routes.
+
+---
+
+## Detailed Task Breakdown for FEATURE N (Coding Mode & Developer Syntax Practice)
+
+- [x] Create language definitions, curated snippet bank, and symbol drills in `@keysmasher/shared/src/passages/code.ts`:
+  - 8 supported programming languages: TypeScript, JavaScript, Python, Rust, Go, SQL, HTML/CSS, C++.
+  - 15+ curated idiomatic code snippets (async fetchers, type unwrap matchers, list comprehensions, structs, SQL joins).
+  - Dedicated bracket & operator drills (`calculateSymbolDensity()`, `calculateSymbolAccuracy()`).
+  - Unit tests in `packages/shared/src/passages/code.test.ts` (7 tests passing, 38/38 total shared tests passing).
+- [x] Typing Engine adaptations for Developer Code in `apps/web/src/features/typing/`:
+  - Support `codeLanguage`, `codeCategory`, `codeSnippetId` in `TypingEngineConfig`.
+  - Enter key token advancement in Code mode allowing seamless cadence without requiring Space exclusively.
+  - Live syntax accuracy calculation (`symbolAccuracy`) and total symbol counting.
+  - Extended metrics passing `symbolAccuracy` into `ExtendedTypingMetrics` and `SavedTestSession`.
+- [x] Practice Page UI enhancements in `apps/web/src/app/practice/page.tsx`:
+  - `Code` mode selector tab with syntax icon.
+  - Interactive language switcher pill bar with syntax badges and full accessibility labels.
+  - Category selector (`Snippets` vs `Symbol Drill`).
+  - Active snippet metadata banner displaying language, snippet title, description, and live symbol accuracy.
+  - Post-test results screen with dedicated **Developer Syntax Accuracy** card and symbol counts.
+  - Formatted clipboard summary including language and symbol accuracy.
+- [x] Write test suite in `apps/web/src/tests/FeatureN.test.tsx` (7 tests passing, 114/114 total web tests passing).
+- [x] Verify strict TypeScript typecheck across all workspaces with 0 errors.
+- [x] Verify ESLint across all workspaces with 0 warnings and 0 errors.
+- [x] Verify production Next.js build across all static and dynamic routes with exit code 0.
+
 
 
 
