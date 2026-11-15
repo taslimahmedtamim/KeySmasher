@@ -8,16 +8,70 @@ import {
 const GAMIFICATION_STORAGE_KEY = 'keysmasher_gamification_state';
 
 /**
- * Level titles mapped to player milestones.
+ * Avengers & Marvel Superhero progression titles mapped directly to each level.
+ */
+export const SUPERHERO_LEVEL_TITLES: string[] = [
+  'S.H.I.E.L.D. Recruit', // Level 1
+  'Hawkeye', // Level 2
+  'Falcon', // Level 3
+  'Winter Soldier', // Level 4
+  'Ant-Man', // Level 5
+  'The Wasp', // Level 6
+  'Black Widow', // Level 7
+  'Quicksilver', // Level 8
+  'War Machine', // Level 9
+  'Scarlet Witch', // Level 10
+  'Spider-Man', // Level 11
+  'Black Panther', // Level 12
+  'Shang-Chi', // Level 13
+  'Moon Knight', // Level 14
+  'Star-Lord', // Level 15
+  'Gamora', // Level 16
+  'Rocket Raccoon', // Level 17
+  'Groot', // Level 18
+  'Vision', // Level 19
+  'Doctor Strange', // Level 20
+  'Captain Marvel', // Level 21
+  'Captain America', // Level 22
+  'Iron Man', // Level 23
+  'Thor (God of Thunder)', // Level 24
+  'The Incredible Hulk', // Level 25
+  'Wolverine', // Level 26
+  'Silver Surfer', // Level 27
+  'Ghost Rider', // Level 28
+  'Nova Prime', // Level 29
+  'Adam Warlock', // Level 30
+  'Phoenix Force', // Level 31
+  'Sentry', // Level 32
+  'Thanos (Titan)', // Level 33
+  'Kang the Conqueror', // Level 34
+  'Doctor Doom', // Level 35
+  'Galactus', // Level 36
+  'The Watcher', // Level 37
+  'Celestial Arishem', // Level 38
+  'The Living Tribunal', // Level 39
+  'The One Above All', // Level 40
+  'Quantum Avenger', // Level 41
+  'Multiverse KeySmasher', // Level 42
+  'Vibranium Sentinel', // Level 43
+  'Nano-Tech Virtuoso', // Level 44
+  'Asgardian Overlord', // Level 45
+  'Infinity Gauntlet Titan', // Level 46
+  'Nexus Being', // Level 47
+  'Cosmic Sovereign', // Level 48
+  'Eternal Vanguard', // Level 49
+  'Supreme Omnipotent Avenger', // Level 50
+];
+
+/**
+ * Returns the superhero Avengers title for the given level.
  */
 export function getLevelTitle(level: number): string {
-  if (level >= 75) return 'Legendary KeySmasher';
-  if (level >= 50) return 'Grandmaster Smasher';
-  if (level >= 35) return 'Apex Speed Demon';
-  if (level >= 20) return 'Keyboard Virtuoso';
-  if (level >= 10) return 'Velocity Typist';
-  if (level >= 5) return 'Cadence Striker';
-  return 'Home Row Trainee';
+  const safeLevel = Math.max(1, Math.floor(level));
+  if (safeLevel <= SUPERHERO_LEVEL_TITLES.length) {
+    return SUPERHERO_LEVEL_TITLES[safeLevel - 1];
+  }
+  return `Omnipotent Avenger (Tier ${safeLevel - SUPERHERO_LEVEL_TITLES.length})`;
 }
 
 /**

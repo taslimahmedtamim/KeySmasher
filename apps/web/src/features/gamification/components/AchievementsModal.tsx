@@ -74,20 +74,10 @@ export function AchievementsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
       <div className="relative w-full max-w-3xl rounded-2xl border border-surface-border bg-surface p-6 sm:p-8 shadow-2xl max-h-[85vh] flex flex-col">
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-5 right-5 rounded-lg p-2 text-slate-400 hover:bg-surface-muted hover:text-white transition-colors"
-          aria-label="Close achievements"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-surface-border pb-5">
+        <div className="flex items-start sm:items-center justify-between border-b border-surface-border pb-5 gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
               <Trophy className="h-6 w-6" />
             </div>
             <div>
@@ -98,10 +88,22 @@ export function AchievementsModal({
             </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-300">
-            <span>
-              {unlockedCount} / {achievements.length} Unlocked
-            </span>
+          {/* Right Header Controls: Unlocked Badge + Close Button */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-300">
+              <span>
+                {unlockedCount} / {achievements.length} Unlocked
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-surface-border bg-surface-muted/60 p-2 text-slate-400 hover:text-white hover:bg-surface-muted transition-colors shrink-0"
+              aria-label="Close achievements"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
         </div>
 

@@ -6,13 +6,11 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { BookOpen, Zap, Swords, LayoutDashboard, Menu, X, User, LogIn, LogOut, Sparkles } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { useGamification, LevelProgressBar } from '@/features/gamification';
 
 export const Header: React.FC = () => {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isGuest, openAuthModal, signOut } = useAuth();
-  const { levelProgress, openAchievementsModal } = useGamification();
 
   // Primary navigation items (shown in main center nav after signin)
   const navItems = user
@@ -111,12 +109,6 @@ export const Header: React.FC = () => {
 
           {user ? (
             <div className="flex items-center gap-2">
-              <LevelProgressBar
-                progress={levelProgress}
-                onOpenAchievements={openAchievementsModal}
-                compact={true}
-              />
-
               <Link
                 href="/dashboard"
                 prefetch={true}

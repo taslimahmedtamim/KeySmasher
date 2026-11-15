@@ -50,13 +50,16 @@ describe('Feature L: Gamification, Levels, Daily Goals & Achievements', () => {
 
   describe('Level Progression & Titles', () => {
     it('accurately maps level numbers to titles', () => {
-      expect(getLevelTitle(1)).toBe('Home Row Trainee');
-      expect(getLevelTitle(5)).toBe('Cadence Striker');
-      expect(getLevelTitle(12)).toBe('Velocity Typist');
-      expect(getLevelTitle(25)).toBe('Keyboard Virtuoso');
-      expect(getLevelTitle(40)).toBe('Apex Speed Demon');
-      expect(getLevelTitle(60)).toBe('Grandmaster Smasher');
-      expect(getLevelTitle(85)).toBe('Legendary KeySmasher');
+      expect(getLevelTitle(1)).toBe('S.H.I.E.L.D. Recruit');
+      expect(getLevelTitle(4)).toBe('Winter Soldier');
+      expect(getLevelTitle(5)).toBe('Ant-Man');
+      expect(getLevelTitle(11)).toBe('Spider-Man');
+      expect(getLevelTitle(22)).toBe('Captain America');
+      expect(getLevelTitle(23)).toBe('Iron Man');
+      expect(getLevelTitle(24)).toBe('Thor (God of Thunder)');
+      expect(getLevelTitle(25)).toBe('The Incredible Hulk');
+      expect(getLevelTitle(50)).toBe('Supreme Omnipotent Avenger');
+      expect(getLevelTitle(55)).toBe('Omnipotent Avenger (Tier 5)');
     });
 
     it('computes level progress and percentage accurately from total XP', () => {
@@ -268,7 +271,7 @@ describe('Feature L: Gamification, Levels, Daily Goals & Achievements', () => {
 
       expect(screen.getByText(/STATUS/i)).toBeInTheDocument();
       expect(screen.getByText(/Daily Training Objectives/i)).toBeInTheDocument();
-      expect(screen.getByText(/Home Row Trainee/i)).toBeInTheDocument();
+      expect(screen.getByText(/Hawkeye/i)).toBeInTheDocument();
     });
   });
 });
