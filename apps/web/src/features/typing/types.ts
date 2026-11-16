@@ -36,6 +36,10 @@ export interface RenderedWord {
   isCompleted: boolean;
   isCurrent: boolean;
   hasErrors: boolean;
+  hasNewlineAfter?: boolean;
+  emptyLinesAfter?: number;
+  indentSpaces?: number;
+  isFirstInLine?: boolean;
 }
 
 export interface TypingEngineConfig {

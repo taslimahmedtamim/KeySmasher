@@ -47,6 +47,94 @@ interface CharacterCounts {
   totalTyped: number;
 }
 
+export interface WordFormattingMetadata {
+  word: string;
+  isFirstInLine: boolean;
+  indentSpaces: number;
+  hasNewlineAfter: boolean;
+  emptyLinesAfter: number;
+}
+
+/**
+ * Tokenize a passage while retaining structured code formatting:
+ * lines, leading indentation, newlines at line endings, and vertical blank lines.
+ */
+export function parsePassageTokens(passage: string): WordFormattingMetadata[] {
+  if (!passage || passage.trim().length === 0) return [];
+  const lines = passage.trim().split(/\r?\n/);
+  const tokens: WordFormattingMetadata[] = [];
+  let pendingEmptyLines = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const trimmed = rawLine.trim();
+    if (trimmed.length === 0) {
+      if (tokens.length > 0) {
+        pendingEmptyLines++;
+      }
+      continue;
+    }
+
+    const indentMatch = rawLine.match(/^(\s*)/);
+    const indentStr = indentMatch ? indentMatch[1] : '';
+    const indentSpaces = indentStr.replace(/\t/g, '    ').length;
+
+    const words = trimmed.split(/\s+/).filter(Boolean);
+    if (tokens.length > 0 && pendingEmptyLines > 0) {
+      tokens[tokens.length - 1].emptyLinesAfter = pendingEmptyLines;
+      pendingEmptyLines = 0;
+    }
+
+    for (let w = 0; w < words.length; w++) {
+      const isFirst = w === 0;
+      const isLast = w === words.length - 1;
+      tokens.push({
+        word: words[w],
+        isFirstInLine: isFirst,
+        indentSpaces: isFirst ? indentSpaces : 0,
+        hasNewlineAfter: isLast,
+        emptyLinesAfter: 0,
+      });
+    }
+  }
+
+  // The very last token of the passage should not have hasNewlineAfter = true
+  if (tokens.length > 0) {
+    tokens[tokens.length - 1].hasNewlineAfter = false;
+  }
+
+  return tokens;
+}
+
+/**
+ * Reconstruct typed text with authentic code formatting for deterministic symbol accuracy scoring.
+ */
+export function buildFormattedPassage(
+  words: string[],
+  tokensMeta: WordFormattingMetadata[],
+  count: number,
+  currentInput?: string
+): string {
+  let result = '';
+  for (let i = 0; i < count; i++) {
+    const meta = tokensMeta[i];
+    const wordText =
+      i === count - 1 && currentInput !== undefined && currentInput.length > 0
+        ? currentInput
+        : words[i] || '';
+    if (meta?.isFirstInLine && meta.indentSpaces > 0) {
+      result += ' '.repeat(meta.indentSpaces);
+    }
+    result += wordText;
+    if (meta?.hasNewlineAfter) {
+      result += '\n' + '\n'.repeat(meta.emptyLinesAfter || 0);
+    } else if (i < count - 1) {
+      result += ' ';
+    }
+  }
+  return result;
+}
+
 /**
  * Compute live cumulative character accuracy counts across typed words and the active word buffer.
  */
@@ -242,10 +330,16 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
     };
   }, []);
 
-  // Target expected words list
-  const expectedWords = useMemo(() => {
-    return passage.length > 0 ? passage.trim().split(/\s+/) : [];
+  // Target expected words list & formatting metadata
+  const parsedTokens = useMemo(() => {
+    return parsePassageTokens(passage);
   }, [passage]);
+  const parsedTokensRef = useRef<WordFormattingMetadata[]>(parsedTokens);
+  parsedTokensRef.current = parsedTokens;
+
+  const expectedWords = useMemo(() => {
+    return parsedTokens.map((t) => t.word);
+  }, [parsedTokens]);
   const expectedWordsRef = useRef<string[]>(expectedWords);
   expectedWordsRef.current = expectedWords;
 
@@ -273,10 +367,12 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
 
     let symbolStats: { symbolAccuracy?: number; totalSymbols?: number } = {};
     if (config.mode === 'code' && passage.length > 0) {
-      const typedPassage = [
-        ...typedWords.slice(0, currentWordIndex),
-        ...(currentInput ? [currentInput] : []),
-      ].join(' ');
+      const typedPassage = buildFormattedPassage(
+        typedWords,
+        parsedTokens,
+        currentWordIndex + (currentInput ? 1 : 0),
+        currentInput
+      );
       const symResult = calculateSymbolAccuracy(typedPassage, passage);
       symbolStats = {
         symbolAccuracy: symResult.accuracy,
@@ -295,7 +391,18 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       keyStats: { ...keyStatsRef.current },
       ...symbolStats,
     };
-  }, [characterCounts, elapsedSeconds, config, currentWordIndex, expectedWords.length, wpmHistory, passage, typedWords, currentInput]);
+  }, [
+    characterCounts,
+    elapsedSeconds,
+    config,
+    currentWordIndex,
+    expectedWords.length,
+    wpmHistory,
+    passage,
+    typedWords,
+    currentInput,
+    parsedTokens,
+  ]);
 
   // End / Complete test (reads latest refs so timer callbacks never capture stale metrics/history)
   const completeTest = useCallback((overrideElapsed?: number) => {
@@ -332,10 +439,12 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
 
       let symbolStats: { symbolAccuracy?: number; totalSymbols?: number } = {};
       if (latestConfig.mode === 'code' && passageRef.current.length > 0) {
-        const typedPassage = [
-          ...typedWordsRef.current.slice(0, currentWordIndexRef.current),
-          ...(currentInputRef.current ? [currentInputRef.current] : []),
-        ].join(' ');
+        const typedPassage = buildFormattedPassage(
+          typedWordsRef.current,
+          parsedTokensRef.current,
+          currentWordIndexRef.current + (currentInputRef.current ? 1 : 0),
+          currentInputRef.current
+        );
         const symResult = calculateSymbolAccuracy(typedPassage, passageRef.current);
         symbolStats = {
           symbolAccuracy: symResult.accuracy,
@@ -502,20 +611,29 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         }
       }
 
-      // Handle Space (or Enter in code mode): advance word
-      if (e.key === ' ' || (config.mode === 'code' && e.key === 'Enter')) {
+      // Handle Space (or Enter in code mode / newline boundaries): advance word
+      const currentMeta = parsedTokens[currentWordIndex];
+      const isEnterAdvancement =
+        e.key === 'Enter' && (config.mode === 'code' || Boolean(currentMeta?.hasNewlineAfter));
+
+      if (e.key === ' ' || isEnterAdvancement) {
         e.preventDefault();
         if (currentInput.length === 0) return; // Don't advance on empty space
 
-        playKeystrokeSound(config.soundTheme, false, 'space', config.soundVolume);
+        playKeystrokeSound(
+          config.soundTheme,
+          false,
+          e.key === 'Enter' ? 'enter' : 'space',
+          config.soundVolume
+        );
         keystrokesInSecondRef.current += 1;
 
-        // Record space attempt
-        const spaceChar = ' ';
-        if (!keyStatsRef.current[spaceChar]) {
-          keyStatsRef.current[spaceChar] = { attempts: 0, errors: 0, confusion: {} };
+        // Record space / enter attempt
+        const keyChar = e.key === 'Enter' ? 'Enter' : ' ';
+        if (!keyStatsRef.current[keyChar]) {
+          keyStatsRef.current[keyChar] = { attempts: 0, errors: 0, confusion: {} };
         }
-        keyStatsRef.current[spaceChar].attempts++;
+        keyStatsRef.current[keyChar].attempts++;
 
         const nextWords = [...typedWords];
         nextWords[currentWordIndex] = currentInput;
@@ -646,7 +764,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         }
       }
     },
-    [currentInput, currentWordIndex, typedWords, expectedWords, config, restart, startTest, completeTest]
+    [currentInput, currentWordIndex, typedWords, expectedWords, parsedTokens, config, restart, startTest, completeTest]
   );
 
   // Handle direct input change (fallback for mobile virtual keyboards)
@@ -677,6 +795,7 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
       const isPastWord = wIndex < currentWordIndex;
       const isCurrent = wIndex === currentWordIndex;
       const isCompleted = isPastWord;
+      const meta = parsedTokens[wIndex];
 
       const characters: RenderedChar[] = [];
       let hasErrors = false;
@@ -722,9 +841,13 @@ export function useTypingEngine(props: UseTypingEngineProps = {}) {
         isCompleted,
         isCurrent,
         hasErrors,
+        hasNewlineAfter: meta?.hasNewlineAfter ?? false,
+        emptyLinesAfter: meta?.emptyLinesAfter ?? 0,
+        indentSpaces: meta?.indentSpaces ?? 0,
+        isFirstInLine: meta?.isFirstInLine ?? false,
       };
     });
-  }, [expectedWords, typedWords, currentInput, currentWordIndex]);
+  }, [expectedWords, typedWords, currentInput, currentWordIndex, parsedTokens]);
 
   // Active character index within the current word
   const activeCharIndex = currentInput.length;

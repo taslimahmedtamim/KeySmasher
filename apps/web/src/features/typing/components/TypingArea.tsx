@@ -131,28 +131,47 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
     };
   }, [updateCaretPosition]);
 
-  // Auto-scroll only when active word moves to a new line (>25px height difference)
+  // Auto-scroll only when active word moves to a new line (>20px height difference)
   useEffect(() => {
     if (activeWordRef.current && containerRef.current) {
       const container = containerRef.current;
       const word = activeWordRef.current;
-      const wordTop = word.offsetTop;
 
-      if (Math.abs(wordTop - lastRowTopRef.current) > 25) {
-        lastRowTopRef.current = wordTop;
-        const containerTop = container.offsetTop;
-        const relativeTop = wordTop - containerTop;
+      if (currentWordIndex === 0) {
+        if (typeof container.scrollTo === 'function') {
+          container.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          container.scrollTop = 0;
+        }
+        lastRowTopRef.current = 0;
+        return;
+      }
+
+      const containerRect = container.getBoundingClientRect();
+      const wordRect = word.getBoundingClientRect();
+      const relativeTop = wordRect.top - containerRect.top;
+
+      if (Math.abs(wordRect.top - lastRowTopRef.current) > 20) {
+        lastRowTopRef.current = wordRect.top;
 
         if (relativeTop > 65) {
-          container.scrollTo({
-            top: wordTop - containerTop - 45,
-            behavior: 'smooth',
-          });
+          if (typeof container.scrollBy === 'function') {
+            container.scrollBy({
+              top: relativeTop - 45,
+              behavior: 'smooth',
+            });
+          } else {
+            container.scrollTop += relativeTop - 45;
+          }
         } else if (relativeTop <= 35) {
-          container.scrollTo({
-            top: 0,
-            behavior: 'smooth',
-          });
+          if (typeof container.scrollTo === 'function') {
+            container.scrollTo({
+              top: 0,
+              behavior: 'smooth',
+            });
+          } else {
+            container.scrollTop = 0;
+          }
         }
       }
     }
@@ -230,38 +249,70 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
             const isCurrentWord = wIdx === currentWordIndex;
 
             return (
-              <div
-                key={wIdx}
-                ref={isCurrentWord ? activeWordRef : null}
-                data-word-id={wIdx}
-                className="relative flex items-center border-b-2 border-transparent transition-colors"
-                style={{
-                  borderBottomColor:
-                    word.isCompleted && word.hasErrors ? 'rgba(244, 63, 94, 0.45)' : 'transparent',
-                }}
-              >
-                {word.characters.map((charObj, cIdx) => {
-                  let charStyle = 'text-slate-500';
-                  if (charObj.state === 'correct') {
-                    charStyle = 'text-cyan-300';
-                  } else if (charObj.state === 'incorrect') {
-                    charStyle = 'text-rose-400 bg-rose-500/20 rounded-[2px]';
-                  } else if (charObj.state === 'extra') {
-                    charStyle =
-                      'text-rose-300 bg-rose-900/60 rounded-[2px] underline decoration-rose-500';
-                  }
+              <React.Fragment key={wIdx}>
+                <div
+                  ref={isCurrentWord ? activeWordRef : null}
+                  data-word-id={wIdx}
+                  className="relative flex items-center border-b-2 border-transparent transition-colors"
+                  style={{
+                    marginLeft:
+                      word.isFirstInLine && word.indentSpaces && word.indentSpaces > 0
+                        ? `${word.indentSpaces}ch`
+                        : undefined,
+                    borderBottomColor:
+                      word.isCompleted && word.hasErrors
+                        ? 'rgba(244, 63, 94, 0.45)'
+                        : 'transparent',
+                  }}
+                >
+                  {word.characters.map((charObj, cIdx) => {
+                    let charStyle = 'text-slate-500';
+                    if (charObj.state === 'correct') {
+                      charStyle = 'text-cyan-300';
+                    } else if (charObj.state === 'incorrect') {
+                      charStyle = 'text-rose-400 bg-rose-500/20 rounded-[2px]';
+                    } else if (charObj.state === 'extra') {
+                      charStyle =
+                        'text-rose-300 bg-rose-900/60 rounded-[2px] underline decoration-rose-500';
+                    }
 
-                  return (
+                    return (
+                      <span
+                        key={cIdx}
+                        data-char-id={`${wIdx}-${cIdx}`}
+                        className={`inline-block ${charStyle}`}
+                      >
+                        {charObj.char}
+                      </span>
+                    );
+                  })}
+                  {word.hasNewlineAfter && (
                     <span
-                      key={cIdx}
-                      data-char-id={`${wIdx}-${cIdx}`}
-                      className={`inline-block ${charStyle}`}
+                      className={`ml-1 select-none text-xs font-mono transition-colors ${
+                        isCurrentWord
+                          ? 'text-cyan-400 font-bold drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]'
+                          : word.isCompleted
+                          ? 'text-slate-600'
+                          : 'text-slate-600/70'
+                      }`}
+                      title="Press Enter to move to next line"
+                      aria-hidden="true"
                     >
-                      {charObj.char}
+                      ↵
                     </span>
-                  );
-                })}
-              </div>
+                  )}
+                </div>
+                {word.hasNewlineAfter && (
+                  <div className="w-full basis-full h-0 pointer-events-none" aria-hidden="true" />
+                )}
+                {word.emptyLinesAfter && word.emptyLinesAfter > 0 ? (
+                  <div
+                    className="w-full basis-full pointer-events-none"
+                    style={{ height: `${word.emptyLinesAfter * 1.5}rem` }}
+                    aria-hidden="true"
+                  />
+                ) : null}
+              </React.Fragment>
             );
           })}
         </div>

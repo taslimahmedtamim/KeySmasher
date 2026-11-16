@@ -2,7 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent, renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import PracticePage from '@/app/practice/page';
-import { useTypingEngine } from '@/features/typing/useTypingEngine';
+import { useTypingEngine, parsePassageTokens } from '@/features/typing/useTypingEngine';
+import { TypingArea } from '@/features/typing/components/TypingArea';
 import {
   calculateSymbolDensity,
   calculateSymbolAccuracy,
@@ -142,5 +143,74 @@ describe('Feature N: Coding Mode & Developer Syntax Practice', () => {
       expect(snippet.language).toBe(lang.id);
       expect(snippet.code.length).toBeGreaterThan(10);
     }
+  });
+
+  it('parses structured code into tokens with indentation and line break metadata', () => {
+    const codeSnippet = '#include <vector>\n\nstruct Player {\n    int wpm;\n};';
+    const tokens = parsePassageTokens(codeSnippet);
+
+    expect(tokens.length).toBe(8);
+    expect(tokens[0].word).toBe('#include');
+    expect(tokens[0].isFirstInLine).toBe(true);
+    expect(tokens[0].indentSpaces).toBe(0);
+
+    expect(tokens[1].word).toBe('<vector>');
+    expect(tokens[1].hasNewlineAfter).toBe(true);
+    expect(tokens[1].emptyLinesAfter).toBe(1);
+
+    expect(tokens[2].word).toBe('struct');
+    expect(tokens[2].isFirstInLine).toBe(true);
+
+    expect(tokens[3].word).toBe('Player');
+    expect(tokens[3].hasNewlineAfter).toBe(false);
+
+    expect(tokens[4].word).toBe('{');
+    expect(tokens[4].hasNewlineAfter).toBe(true);
+
+    expect(tokens[5].word).toBe('int');
+    expect(tokens[5].isFirstInLine).toBe(true);
+    expect(tokens[5].indentSpaces).toBe(4);
+
+    expect(tokens[6].word).toBe('wpm;');
+    expect(tokens[6].hasNewlineAfter).toBe(true);
+
+    expect(tokens[7].word).toBe('};');
+    expect(tokens[7].isFirstInLine).toBe(true);
+    expect(tokens[7].hasNewlineAfter).toBe(false);
+  });
+
+  it('renders code structure with indentation margins and Enter indicators in TypingArea', () => {
+    const snippet = '#include <vector>\n    std::string name;';
+    const { result } = renderHook(() =>
+      useTypingEngine({
+        initialConfig: {
+          mode: 'code',
+          initialPassage: snippet,
+        },
+      })
+    );
+
+    render(
+      <TypingArea
+        renderedWords={result.current.renderedWords}
+        currentWordIndex={result.current.currentWordIndex}
+        activeCharIndex={result.current.activeCharIndex}
+        status={result.current.status}
+        inputRef={{ current: null }}
+        onKeyDown={() => {}}
+        onInputChange={() => {}}
+        onPaste={() => {}}
+      />
+    );
+
+    // Verify Enter indicator ↵ is rendered
+    const enterIndicators = screen.getAllByText('↵');
+    expect(enterIndicators.length).toBeGreaterThanOrEqual(1);
+
+    // Verify indentation metadata on the first word of indented line
+    const words = result.current.renderedWords;
+    const indentedWord = words.find((w) => w.expected === 'std::string');
+    expect(indentedWord?.indentSpaces).toBe(4);
+    expect(indentedWord?.isFirstInLine).toBe(true);
   });
 });
