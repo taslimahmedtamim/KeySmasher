@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, FileText, Sparkles, Check } from 'lucide-react';
 
 interface CustomTextModalProps {
@@ -32,8 +33,14 @@ export const CustomTextModal: React.FC<CustomTextModalProps> = ({
   initialText = '',
 }) => {
   const [text, setText] = useState(initialText);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (!isOpen) return null;
+  if (!mounted || typeof document === 'undefined') return null;
 
   const wordsCount = text.trim().length > 0 ? text.trim().split(/\s+/).length : 0;
   const charsCount = text.length;
@@ -45,9 +52,9 @@ export const CustomTextModal: React.FC<CustomTextModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-xl rounded-2xl border border-surface-border bg-surface p-6 shadow-2xl">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="relative w-full max-w-xl my-auto rounded-2xl border border-surface-border bg-surface p-6 shadow-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-surface-border pb-4">
           <div className="flex items-center gap-2">
@@ -137,6 +144,7 @@ export const CustomTextModal: React.FC<CustomTextModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

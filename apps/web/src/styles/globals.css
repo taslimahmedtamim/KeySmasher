@@ -102,20 +102,18 @@ main,
   background: #2d3b55;
 }
 
-/* Smooth Page & Component Transitions without blank dropouts */
+/* Smooth Page & Component Transitions without blank dropouts or transform trapping */
 @keyframes pageEnter {
   from {
     opacity: 0.85;
-    transform: translateY(2px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 .page-enter {
-  animation: pageEnter 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: pageEnter 0.15s ease-out forwards;
 }
 
 /* Hardware accelerated smooth hover transitions on interactive controls */

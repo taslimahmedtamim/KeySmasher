@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Swords, Sparkles, Check } from 'lucide-react';
 import { PassageDifficulty, RoomConfig, TestMode } from '@keysmasher/shared';
 
@@ -20,7 +21,14 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
   const [maxPlayers, setMaxPlayers] = useState<number>(8);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   if (!isOpen) return null;
+  if (!mounted || typeof document === 'undefined') return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +52,7 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in overflow-y-auto">
       <div className="relative w-full max-w-lg my-auto rounded-2xl border border-surface-border bg-surface p-5 sm:p-6 shadow-2xl max-h-[calc(100vh-1.5rem)] overflow-y-auto">
         {/* Close Button */}
@@ -244,6 +252,7 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
