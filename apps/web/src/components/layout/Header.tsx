@@ -92,9 +92,6 @@ export const Header: React.FC = () => {
                 >
                   <Icon className={`h-4 w-4 transition-colors duration-200 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
                   <span>{item.name}</span>
-                  {isActive && (
-                    <span className="absolute bottom-1 left-3 right-3 h-[2px] rounded-full bg-cyan-400/90 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
-                  )}
                 </Link>
               );
             })}
