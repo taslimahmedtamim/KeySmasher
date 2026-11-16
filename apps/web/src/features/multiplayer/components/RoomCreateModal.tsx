@@ -45,35 +45,35 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-lg rounded-2xl border border-surface-border bg-surface p-6 shadow-2xl sm:p-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+      <div className="relative w-full max-w-lg my-auto rounded-2xl border border-surface-border bg-surface p-5 sm:p-6 shadow-2xl max-h-[calc(100vh-1.5rem)] overflow-y-auto">
         {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 rounded-lg p-2 text-slate-400 hover:bg-surface-muted hover:text-white transition-colors"
+          className="absolute top-4 right-4 rounded-lg p-1.5 text-slate-400 hover:bg-surface-muted hover:text-white transition-colors"
           aria-label="Close dialog"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-3 border-b border-surface-border pb-5">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/30">
-            <Swords className="h-5 w-5" />
+        <div className="flex items-center gap-3 border-b border-surface-border pb-3.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/30 shrink-0">
+            <Swords className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Create Private Battle Arena</h2>
+            <h2 className="text-lg font-bold text-white">Create Private Battle Arena</h2>
             <p className="text-xs text-slate-400 mt-0.5">
               Customize room rules, length, and invite your friends.
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+        <form onSubmit={handleSubmit} className="mt-3.5 space-y-3">
           {/* Test Mode */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
               Passage Mode
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -82,7 +82,7 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
                   key={m}
                   type="button"
                   onClick={() => setMode(m)}
-                  className={`rounded-xl py-2 px-3 text-xs font-bold capitalize transition-all border ${
+                  className={`rounded-xl py-1.5 px-3 text-xs font-bold capitalize transition-all border ${
                     mode === m
                       ? 'border-purple-500 bg-purple-600/20 text-purple-300 shadow-neon-purple'
                       : 'border-surface-border bg-surface-muted/50 text-slate-400 hover:text-white hover:border-slate-600'
@@ -97,7 +97,7 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
           {/* Mode-Specific Length */}
           {mode === 'words' && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                 Word Count
               </label>
               <div className="grid grid-cols-4 gap-2">
@@ -106,7 +106,7 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
                     key={w}
                     type="button"
                     onClick={() => setTargetWords(w)}
-                    className={`rounded-xl py-2 text-xs font-bold transition-all border ${
+                    className={`rounded-xl py-1.5 text-xs font-bold transition-all border ${
                       targetWords === w
                         ? 'border-cyan-500 bg-cyan-600/20 text-cyan-300'
                         : 'border-surface-border bg-surface-muted/50 text-slate-400 hover:text-white'
@@ -121,7 +121,7 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
 
           {mode === 'time' && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                 Time Duration
               </label>
               <div className="grid grid-cols-4 gap-2">
@@ -130,7 +130,7 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
                     key={s}
                     type="button"
                     onClick={() => setTargetDuration(s)}
-                    className={`rounded-xl py-2 text-xs font-bold transition-all border ${
+                    className={`rounded-xl py-1.5 text-xs font-bold transition-all border ${
                       targetDuration === s
                         ? 'border-cyan-500 bg-cyan-600/20 text-cyan-300'
                         : 'border-surface-border bg-surface-muted/50 text-slate-400 hover:text-white'
@@ -145,7 +145,7 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
 
           {/* Difficulty */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
               Vocabulary Difficulty
             </label>
             <div className="grid grid-cols-4 gap-2">
@@ -154,7 +154,7 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
                   key={d}
                   type="button"
                   onClick={() => setDifficulty(d)}
-                  className={`rounded-xl py-2 text-xs font-bold capitalize transition-all border ${
+                  className={`rounded-xl py-1.5 text-xs font-bold capitalize transition-all border ${
                     difficulty === d
                       ? 'border-purple-500 bg-purple-600/20 text-purple-300'
                       : 'border-surface-border bg-surface-muted/50 text-slate-400 hover:text-white'
@@ -167,18 +167,18 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
           </div>
 
           {/* Modifiers (Punctuation & Numbers) */}
-          <div className="flex gap-4 pt-1">
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={() => setPunctuation(!punctuation)}
-              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 border text-xs font-semibold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2 px-3 border text-xs font-semibold transition-all ${
                 punctuation
                   ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-300'
                   : 'border-surface-border bg-surface-muted/40 text-slate-400 hover:text-white'
               }`}
             >
               <div
-                className={`h-4 w-4 rounded flex items-center justify-center border ${
+                className={`h-3.5 w-3.5 rounded flex items-center justify-center border ${
                   punctuation ? 'bg-cyan-500 border-cyan-400 text-slate-950' : 'border-slate-600'
                 }`}
               >
@@ -190,14 +190,14 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
             <button
               type="button"
               onClick={() => setNumbers(!numbers)}
-              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 border text-xs font-semibold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2 px-3 border text-xs font-semibold transition-all ${
                 numbers
                   ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-300'
                   : 'border-surface-border bg-surface-muted/40 text-slate-400 hover:text-white'
               }`}
             >
               <div
-                className={`h-4 w-4 rounded flex items-center justify-center border ${
+                className={`h-3.5 w-3.5 rounded flex items-center justify-center border ${
                   numbers ? 'bg-cyan-500 border-cyan-400 text-slate-950' : 'border-slate-600'
                 }`}
               >
@@ -209,7 +209,7 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
 
           {/* Max Players */}
           <div>
-            <div className="flex justify-between text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            <div className="flex justify-between text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
               <span>Racer Capacity</span>
               <span className="text-purple-400 font-bold">{maxPlayers} Racers</span>
             </div>
@@ -220,25 +220,25 @@ export function RoomCreateModal({ isOpen, onClose, onCreate }: RoomCreateModalPr
               step={1}
               value={maxPlayers}
               onChange={(e) => setMaxPlayers(parseInt(e.target.value, 10))}
-              className="w-full accent-purple-500 bg-surface-muted rounded-lg h-2 cursor-pointer"
+              className="w-full accent-purple-500 bg-surface-muted rounded-lg h-1.5 cursor-pointer"
             />
           </div>
 
           {/* Actions */}
-          <div className="pt-3 flex gap-3">
+          <div className="pt-2 flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-surface-border py-2.5 text-sm font-semibold text-slate-400 hover:bg-surface-muted hover:text-white transition-colors"
+              className="flex-1 rounded-xl border border-surface-border py-2 text-xs font-semibold text-slate-400 hover:bg-surface-muted hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-sm font-bold text-white shadow-neon-purple hover:bg-purple-500 transition-all disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-2 text-xs font-bold text-white shadow-neon-purple hover:bg-purple-500 transition-all disabled:opacity-50"
             >
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-3.5 w-3.5" />
               <span>{isSubmitting ? 'Creating Arena...' : 'Create Arena'}</span>
             </button>
           </div>
