@@ -29,7 +29,6 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const activeWordRef = useRef<HTMLDivElement>(null);
-  const lastRowTopRef = useRef<number>(0);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [caretPos, setCaretPos] = useState<{
@@ -131,51 +130,54 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
     };
   }, [updateCaretPosition]);
 
-  // Auto-scroll only when active word moves to a new line (>20px height difference)
+  // Auto-scroll to keep active word visible in upper-middle view
   useEffect(() => {
-    if (activeWordRef.current && containerRef.current) {
-      const container = containerRef.current;
-      const word = activeWordRef.current;
+    if (!activeWordRef.current || !containerRef.current) return;
 
-      if (currentWordIndex === 0) {
-        if (typeof container.scrollTo === 'function') {
-          container.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-          container.scrollTop = 0;
-        }
-        lastRowTopRef.current = 0;
-        return;
+    const container = containerRef.current;
+    const word = activeWordRef.current;
+
+    if (currentWordIndex === 0) {
+      if (typeof container.scrollTo === 'function') {
+        container.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        container.scrollTop = 0;
       }
+      return;
+    }
 
-      const containerRect = container.getBoundingClientRect();
-      const wordRect = word.getBoundingClientRect();
-      const relativeTop = wordRect.top - containerRect.top;
+    // Absolute offset of the active word from the top of container's scrollable content
+    const containerRect = container.getBoundingClientRect();
+    const wordRect = word.getBoundingClientRect();
+    const wordAbsoluteTop = wordRect.top - containerRect.top + container.scrollTop;
 
-      if (Math.abs(wordRect.top - lastRowTopRef.current) > 20) {
-        lastRowTopRef.current = wordRect.top;
+    // Position active line around 45px from top of container viewport
+    // Only scroll once active line extends beyond the initial 2 visible lines (>75px)
+    const targetScrollTop = wordAbsoluteTop > 75 ? Math.max(0, wordAbsoluteTop - 45) : 0;
 
-        if (relativeTop > 65) {
-          if (typeof container.scrollBy === 'function') {
-            container.scrollBy({
-              top: relativeTop - 45,
-              behavior: 'smooth',
-            });
-          } else {
-            container.scrollTop += relativeTop - 45;
-          }
-        } else if (relativeTop <= 35) {
-          if (typeof container.scrollTo === 'function') {
-            container.scrollTo({
-              top: 0,
-              behavior: 'smooth',
-            });
-          } else {
-            container.scrollTop = 0;
-          }
-        }
+    // Only scroll if difference is meaningful (>8px) to prevent unnecessary small shifts
+    if (Math.abs(container.scrollTop - targetScrollTop) > 8) {
+      if (typeof container.scrollTo === 'function') {
+        container.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth',
+        });
+      } else {
+        container.scrollTop = targetScrollTop;
       }
     }
   }, [currentWordIndex]);
+
+  // Sync scroll listener for caret tracking
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('scroll', updateCaretPosition);
+      return () => {
+        container.removeEventListener('scroll', updateCaretPosition);
+      };
+    }
+  }, [updateCaretPosition]);
 
   // Keystroke handler wrapper to pause caret pulse during active typing
   const handleKeyDownInternal = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -206,7 +208,7 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
     <div
       ref={containerRef}
       onClick={handleContainerClick}
-      className={`relative max-h-[170px] overflow-hidden cursor-text font-mono text-xl sm:text-2xl leading-[2.2] tracking-wider select-none text-left outline-none focus:outline-none ${className}`}
+      className={`relative max-h-[170px] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden cursor-text font-mono text-xl sm:text-2xl leading-[2.2] tracking-wider select-none text-left outline-none focus:outline-none ${className}`}
       tabIndex={-1}
       role="region"
       aria-label="Typing passage input area"
