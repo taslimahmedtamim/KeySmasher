@@ -32,14 +32,6 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-surface-border bg-background/80 backdrop-blur-md relative">
-      {/* Sleek top neon loading bar during optimistic page transit */}
-      {pendingHref && (
-        <div
-          data-testid="nav-progress-bar"
-          className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse z-50 pointer-events-none"
-        />
-      )}
-
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         {/* Brand Logo & Name */}
         <Link
@@ -92,14 +84,17 @@ export const Header: React.FC = () => {
                       setPendingHref(item.href);
                     }
                   }}
-                  className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-150 active:scale-95 outline-none focus:outline-none focus:ring-0 ${
+                  className={`relative flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 outline-none focus:outline-none select-none ${
                     isActive
-                      ? 'border border-cyan-500/40 bg-surface-muted text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
-                      : 'text-slate-300 hover:bg-surface hover:text-white'
+                      ? 'bg-cyan-500/15 text-cyan-300 shadow-[0_0_16px_rgba(34,211,238,0.15)]'
+                      : 'text-slate-400 hover:text-white hover:bg-surface/50'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                  <Icon className={`h-4 w-4 transition-colors duration-200 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
                   <span>{item.name}</span>
+                  {isActive && (
+                    <span className="absolute bottom-1 left-3 right-3 h-[2px] rounded-full bg-cyan-400/90 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                  )}
                 </Link>
               );
             })}
@@ -121,14 +116,17 @@ export const Header: React.FC = () => {
                   setPendingHref('/practice');
                 }
               }}
-              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-150 active:scale-95 outline-none focus:outline-none focus:ring-0 ${
+              className={`relative flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 outline-none focus:outline-none select-none ${
                 activeHref === '/practice'
-                  ? 'border border-cyan-500/40 bg-surface-muted text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
-                  : 'text-slate-300 hover:bg-surface hover:text-white'
+                  ? 'bg-cyan-500/15 text-cyan-300 shadow-[0_0_16px_rgba(34,211,238,0.15)]'
+                  : 'text-slate-400 hover:text-white hover:bg-surface/50'
               }`}
             >
-              <Zap className={`h-4 w-4 ${activeHref === '/practice' ? 'text-cyan-400' : 'text-slate-400'}`} />
+              <Zap className={`h-4 w-4 transition-colors duration-200 ${activeHref === '/practice' ? 'text-cyan-400' : 'text-slate-400'}`} />
               <span>Quick Test</span>
+              {activeHref === '/practice' && (
+                <span className="absolute bottom-1 left-3 right-3 h-[2px] rounded-full bg-cyan-400/90 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+              )}
             </Link>
           )}
 
@@ -213,9 +211,9 @@ export const Header: React.FC = () => {
                       setPendingHref(item.href);
                     }
                   }}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:outline-none ${
+                  className={`flex items-center gap-3 rounded-xl px-3.5 py-2 text-sm font-medium outline-none focus:outline-none transition-colors duration-150 ${
                     isActive
-                      ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+                      ? 'bg-cyan-500/15 text-cyan-400 font-semibold'
                       : 'text-slate-300 hover:bg-surface-muted hover:text-white'
                   }`}
                 >

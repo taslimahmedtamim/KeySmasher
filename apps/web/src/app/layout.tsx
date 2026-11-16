@@ -63,7 +63,7 @@ export default function RootLayout({
         <style
           dangerouslySetInnerHTML={{
             __html: `
-              html, body, #__next {
+              html, body, main, #__next {
                 background-color: #090d16 !important;
                 color: #f1f5f9;
                 color-scheme: dark !important;
@@ -74,12 +74,12 @@ export default function RootLayout({
       </head>
       <body
         style={{ colorScheme: 'dark', backgroundColor: '#090d16' }}
-        className="flex min-h-screen flex-col bg-background font-sans text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200"
+        className="flex min-h-screen flex-col bg-[#090d16] font-sans text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200"
       >
         <AppProviders>
           <SkipToContent />
           <Header />
-          <main id="main-content" tabIndex={-1} className="flex-1 outline-none focus:outline-none">
+          <main id="main-content" tabIndex={-1} className="flex-1 bg-[#090d16] outline-none focus:outline-none">
             {children}
           </main>
           <Footer />
