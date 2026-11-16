@@ -1097,6 +1097,7 @@ export default function PracticePage() {
                 onKeyDown={handleKeyDown}
                 onInputChange={handleInputChange}
                 onPaste={handlePaste}
+                className={config.mode === 'code' ? 'max-h-[220px]' : ''}
               />
             </div>
           )}

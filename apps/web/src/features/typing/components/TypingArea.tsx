@@ -28,7 +28,6 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const activeWordRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [caretPos, setCaretPos] = useState<{
@@ -130,43 +129,45 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
     };
   }, [updateCaretPosition]);
 
-  // Auto-scroll to keep active word visible in upper-middle view
+  // Keep the actively typed line fully visible at all times without requiring manual scroll
   useEffect(() => {
-    if (!activeWordRef.current || !containerRef.current) return;
-
     const container = containerRef.current;
-    const word = activeWordRef.current;
+    if (!container) return;
 
     if (currentWordIndex === 0) {
-      if (typeof container.scrollTo === 'function') {
-        container.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        container.scrollTop = 0;
-      }
+      container.scrollTop = 0;
       return;
     }
 
-    // Absolute offset of the active word from the top of container's scrollable content
-    const containerRect = container.getBoundingClientRect();
-    const wordRect = word.getBoundingClientRect();
-    const wordAbsoluteTop = wordRect.top - containerRect.top + container.scrollTop;
+    const scrollActiveIntoView = () => {
+      const wordEl = container.querySelector<HTMLElement>(`[data-word-id="${currentWordIndex}"]`);
+      if (!wordEl) return;
 
-    // Position active line around 45px from top of container viewport
-    // Only scroll once active line extends beyond the initial 2 visible lines (>75px)
-    const targetScrollTop = wordAbsoluteTop > 75 ? Math.max(0, wordAbsoluteTop - 45) : 0;
+      const containerRect = container.getBoundingClientRect();
+      const wordRect = wordEl.getBoundingClientRect();
 
-    // Only scroll if difference is meaningful (>8px) to prevent unnecessary small shifts
-    if (Math.abs(container.scrollTop - targetScrollTop) > 8) {
-      if (typeof container.scrollTo === 'function') {
-        container.scrollTo({
-          top: targetScrollTop,
-          behavior: 'smooth',
-        });
-      } else {
-        container.scrollTop = targetScrollTop;
+      // Absolute offset of the word within the scrollable content
+      const wordTop = wordRect.top - containerRect.top + container.scrollTop;
+      const wordBottom = wordRect.bottom - containerRect.top + container.scrollTop;
+      const viewportHeight = container.clientHeight;
+
+      // Check if word is beyond or near the bottom of visible container viewport
+      const isBelowViewport = wordBottom > container.scrollTop + viewportHeight - 20;
+      // Check if word is above the visible container viewport (e.g. backspacing)
+      const isAboveViewport = wordTop < container.scrollTop + 10;
+
+      if (isBelowViewport) {
+        // Scroll so the active line sits comfortably in upper-middle view (~40px from top)
+        container.scrollTop = Math.max(0, wordTop - 40);
+      } else if (isAboveViewport) {
+        container.scrollTop = Math.max(0, wordTop - 20);
       }
-    }
-  }, [currentWordIndex]);
+    };
+
+    scrollActiveIntoView();
+    const frameId = requestAnimationFrame(scrollActiveIntoView);
+    return () => cancelAnimationFrame(frameId);
+  }, [currentWordIndex, renderedWords.length]);
 
   // Sync scroll listener for caret tracking
   useEffect(() => {
@@ -204,11 +205,15 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
     inputRef.current?.focus();
   };
 
+  const heightClass = className.includes('max-h-')
+    ? ''
+    : 'max-h-[185px] sm:max-h-[210px]';
+
   return (
     <div
       ref={containerRef}
       onClick={handleContainerClick}
-      className={`relative max-h-[170px] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden cursor-text font-mono text-xl sm:text-2xl leading-[2.2] tracking-wider select-none text-left outline-none focus:outline-none ${className}`}
+      className={`relative ${heightClass} overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden cursor-text font-mono text-xl sm:text-2xl leading-[2.2] tracking-wider select-none text-left outline-none focus:outline-none ${className}`}
       tabIndex={-1}
       role="region"
       aria-label="Typing passage input area"
@@ -253,7 +258,6 @@ export const TypingArea: React.FC<TypingAreaProps> = ({
             return (
               <React.Fragment key={wIdx}>
                 <div
-                  ref={isCurrentWord ? activeWordRef : null}
                   data-word-id={wIdx}
                   className="relative flex items-center border-b-2 border-transparent transition-colors"
                   style={{
